@@ -18,7 +18,7 @@ jobs:
     name: Validate Kubernetes Manifests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Install kubeconform
         run: |
