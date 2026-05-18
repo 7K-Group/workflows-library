@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.0](https://github.com/7K-Hiroba/workflows-library/compare/v1.3.0...v1.4.0) (2026-05-18)
+
+
+### Features
+
+* add ci helm library ([#53](https://github.com/7K-Hiroba/workflows-library/issues/53)) ([0533039](https://github.com/7K-Hiroba/workflows-library/commit/0533039febdedde222af63b7b5a4f0971f68b7d8))
+
+
+### Bug Fixes
+
+* upate renovate to batch all updates in one p.r. ([f26888e](https://github.com/7K-Hiroba/workflows-library/commit/f26888e40b34d9ad36fee070f371f08d2c474d01))
+* upate renovate to batch all updates in one p.r. ([df3e41b](https://github.com/7K-Hiroba/workflows-library/commit/df3e41be77e64dd5f0c5801d773587fb4854cb3f))
+
 ## [1.3.0](https://github.com/7K-Hiroba/workflows-library/compare/v1.2.2...v1.3.0) (2026-05-03)
 
 
