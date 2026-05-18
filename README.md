@@ -40,6 +40,7 @@ release-please.yml                release.yml (dispatcher)
 |---|---|
 | `ci-app.yml` | Detect runtime → test (node/go/python) → docker build → Trivy scan |
 | `ci-helm.yml` | Helm lint → template render → chart-testing → kubeconform → deprecated API detection |
+| `ci-helm-library.yml` | Verify `type: library` → helm lint → values.schema.json presence → ct lint. Use for Helm *library* charts (the standard `ci-helm.yml` can't render templates of a library chart). |
 | `ci-docs.yml` | markdown lint |
 | `ci-crossplane.yml` | YAML validation → kubectl dry-run |
 | `ci-kubeconform.yml` | kubeconform schema validation → pluto deprecated API detection |

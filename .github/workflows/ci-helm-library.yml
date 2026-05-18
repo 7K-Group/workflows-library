@@ -1,0 +1,94 @@
+name: "CI: Helm Library"
+
+# CI for Helm *library* charts (Chart.yaml `type: library`). The standard
+# ci-helm.yml can't be used because `helm template` and kubeconform both fail
+# with "library charts are not installable" — libraries ship only `define`d
+# named templates and have no installable resources of their own.
+#
+# This workflow keeps the jobs that DO apply:
+#   - helm lint
+#   - values.schema.json presence (libraries ship a reference schema)
+#   - ct lint (version-increment + maintainer-less validation)
+
+on:
+  workflow_call:
+    inputs:
+      path:
+        required: true
+        type: string
+        description: "Path to the library chart directory (containing Chart.yaml with type: library)."
+      target-branch:
+        required: false
+        type: string
+        default: "main"
+        description: "Branch to diff against for ct lint's version-increment check."
+
+jobs:
+  verify-library:
+    name: Verify Chart.yaml type
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Assert type is library
+        run: |
+          type=$(awk '/^type:/ {print $2; exit}' "${{ inputs.path }}/Chart.yaml")
+          if [ "$type" != "library" ]; then
+            echo "::error::${{ inputs.path }}/Chart.yaml type is '$type', expected 'library'. Use ci-helm.yml for application charts."
+            exit 1
+          fi
+
+  lint:
+    needs: verify-library
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v5
+        with:
+          version: v4.1.4
+
+      - name: Lint chart
+        run: helm lint ${{ inputs.path }}
+
+  schema:
+    needs: verify-library
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check for reference values.schema.json
+        run: |
+          if [ ! -f "${{ inputs.path }}/values.schema.json" ]; then
+            echo "::error::Missing values.schema.json in ${{ inputs.path }}. Library charts ship a reference schema so consumers have a copy-paste starting point."
+            exit 1
+          fi
+
+      - name: Validate JSON syntax
+        run: python3 -c "import json; json.load(open('${{ inputs.path }}/values.schema.json'))"
+
+  chart-testing:
+    needs: verify-library
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v5
+        with:
+          version: v4.1.4
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2
+
+      - name: Run ct lint
+        run: |
+          ct lint \
+            --target-branch "${{ inputs.target-branch }}" \
+            --chart-dirs "$(dirname '${{ inputs.path }}')" \
+            --charts "${{ inputs.path }}" \
+            --validate-maintainers=false \
+            --check-version-increment=true
