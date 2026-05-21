@@ -67,7 +67,6 @@ jobs:
           version: v4.1.4
 
       - name: Install helm-unittest plugin
-        # Helm 4 requires --verify=false for unsigned plugin sources
         run: helm plugin install https://github.com/helm-unittest/helm-unittest.git --verify=false
 
       - name: Run unit tests
@@ -96,6 +95,38 @@ jobs:
 
       - name: Run chart-testing lint
         run: ct lint --chart-dirs "$(dirname "${{ inputs.path }}")" --charts "${{ inputs.path }}"
+
+  helm-docs:
+    name: Verify README is in sync with values.yaml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install helm-docs
+        env:
+          HELM_DOCS_VERSION: "1.14.2"
+        run: |
+          curl -fsSL "https://github.com/norwoodj/helm-docs/releases/download/v${HELM_DOCS_VERSION}/helm-docs_${HELM_DOCS_VERSION}_Linux_x86_64.tar.gz" \
+            | tar xz -C /usr/local/bin helm-docs
+
+      - name: Skip when no README.md.gotmpl is present
+        id: gate
+        run: |
+          if [ -f "${{ inputs.path }}/README.md.gotmpl" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::No README.md.gotmpl in ${{ inputs.path }} — skipping helm-docs check."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Regenerate README and diff
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          helm-docs --chart-search-root "${{ inputs.path }}" --log-level warning
+          if ! git diff --exit-code "${{ inputs.path }}/README.md"; then
+            echo "::error::README.md is out of sync with values.yaml / README.md.gotmpl. Run 'helm-docs --chart-search-root ${{ inputs.path }}' locally and commit the result."
+            exit 1
+          fi
 
   kubeconform:
     runs-on: ubuntu-latest
