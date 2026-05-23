@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/7K-Hiroba/workflows-library/compare/v1.4.0...v1.5.0) (2026-05-21)
+
+
+### Features
+
+* run helm-docs on ci helm to dynamically update readme ([eee6857](https://github.com/7K-Hiroba/workflows-library/commit/eee6857b7c7062f6734e7ee68754ff6df9232100))
+
 ## [1.4.0](https://github.com/7K-Hiroba/workflows-library/compare/v1.3.0...v1.4.0) (2026-05-18)
 
 
