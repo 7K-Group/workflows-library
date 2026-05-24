@@ -18,6 +18,12 @@ on:
               "displayName": "My App" }
         required: true
         type: string
+    secrets:
+      AH_API_KEY_ID:
+        required: true
+      AH_API_KEY_SECRET:
+        required: true
+
 
 jobs:
   bootstrap:

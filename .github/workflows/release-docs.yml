@@ -9,6 +9,19 @@ on:
       version:
         required: true
         type: string
+    secrets:
+      DOCS_S3_ACCESS_KEY_ID:
+        required: true
+      DOCS_S3_SECRET_ACCESS_KEY:
+        required: true
+      APPDOCS_S3_BUCKET:
+        required: true
+      DOCS_S3_ENDPOINT_URL:
+        required: true
+      HIROBA_DISPATCH_APP_ID:
+        required: true
+      HIROBA_DISPATCH_APP_PRIVATE_KEY:
+        required: true
 
 jobs:
   publish:

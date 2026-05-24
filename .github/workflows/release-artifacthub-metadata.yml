@@ -11,7 +11,15 @@ on:
         description: OCI chart name (e.g., bulwark-mail)
         required: true
         type: string
-
+    secrets:
+      HARBOR_REGISTRY:
+        required: true
+      HARBOR_ROBOT_NAME:
+        required: true
+      HARBOR_ROBOT_TOKEN:
+        required: true
+      HARBOR_PROJECT:
+        required: true
 jobs:
   publish:
     runs-on: ubuntu-latest
