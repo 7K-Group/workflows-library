@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/7K-Hiroba/workflows-library/compare/v1.5.0...v1.5.1) (2026-05-24)
+
+
+### Bug Fixes
+
+* surface helm push errors instead of swallowing them ([#55](https://github.com/7K-Hiroba/workflows-library/issues/55)) ([147d4ad](https://github.com/7K-Hiroba/workflows-library/commit/147d4ad57faf58e4396db4d06df1962ac8c0ac71))
+
 ## [1.5.0](https://github.com/7K-Hiroba/workflows-library/compare/v1.4.0...v1.5.0) (2026-05-21)
 
 
