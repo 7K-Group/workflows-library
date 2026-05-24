@@ -67,9 +67,16 @@ jobs:
           PACKAGE: ${{ steps.package.outputs.package }}
         run: |
           REF="oci://$HARBOR_REGISTRY/$HARBOR_PROJECT/charts"
-          OUTPUT=$(helm push "$PACKAGE" "$REF" 2>&1)
+          if ! OUTPUT=$(helm push "$PACKAGE" "$REF" 2>&1); then
+            echo "$OUTPUT"
+            exit 1
+          fi
           echo "$OUTPUT"
           DIGEST=$(echo "$OUTPUT" | grep -oP 'Digest: \K\S+')
+          if [ -z "$DIGEST" ]; then
+            echo "ERROR: could not parse digest from helm push output" >&2
+            exit 1
+          fi
           echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
           echo "ref=$HARBOR_REGISTRY/$HARBOR_PROJECT/charts/$CHART_NAME" >> "$GITHUB_OUTPUT"
 
