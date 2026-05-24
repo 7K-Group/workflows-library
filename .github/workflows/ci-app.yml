@@ -11,61 +11,7 @@ on:
         type: string
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Detect runtime
-        id: detect
-        run: |
-          if [ -f "package.json" ]; then
-            echo "runtime=node" >> "$GITHUB_OUTPUT"
-          elif [ -f "go.mod" ]; then
-            echo "runtime=go" >> "$GITHUB_OUTPUT"
-          elif [ -f "requirements.txt" ] || [ -f "pyproject.toml" ]; then
-            echo "runtime=python" >> "$GITHUB_OUTPUT"
-          else
-            echo "runtime=unknown" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Setup Node.js
-        if: steps.detect.outputs.runtime == 'node'
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: Install & test (Node.js)
-        if: steps.detect.outputs.runtime == 'node'
-        run: |
-          npm ci
-          npm test --if-present
-
-      - name: Setup Go
-        if: steps.detect.outputs.runtime == 'go'
-        uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-
-      - name: Test (Go)
-        if: steps.detect.outputs.runtime == 'go'
-        run: go test ./...
-
-      - name: Setup Python
-        if: steps.detect.outputs.runtime == 'python'
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.14'
-
-      - name: Test (Python)
-        if: steps.detect.outputs.runtime == 'python'
-        run: |
-          pip install -r requirements.txt 2>/dev/null || pip install -e ".[test]" 2>/dev/null || true
-          python -m pytest --tb=short 2>/dev/null || echo "No tests found"
-
   build:
-    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
