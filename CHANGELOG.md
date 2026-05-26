@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.3](https://github.com/7K-Hiroba/workflows-library/compare/v1.5.2...v1.5.3) (2026-05-26)
+
+
+### Bug Fixes
+
+* use job_workflow_ref in certificate identity ([ce7d41b](https://github.com/7K-Hiroba/workflows-library/commit/ce7d41b1d69a4021c820f126cf4ac81f80ab31a9))
+
 ## [1.5.2](https://github.com/7K-Hiroba/workflows-library/compare/v1.5.1...v1.5.2) (2026-05-25)
 
 
