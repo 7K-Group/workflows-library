@@ -39,6 +39,19 @@ jobs:
       - name: Lint before publish
         run: helm lint ${{ inputs.path }}
 
+      - name: Install helm-docs
+        env:
+          HELM_DOCS_VERSION: "1.14.2"
+        run: |
+          curl -fsSL "https://github.com/norwoodj/helm-docs/releases/download/v${HELM_DOCS_VERSION}/helm-docs_${HELM_DOCS_VERSION}_Linux_x86_64.tar.gz" \
+            | tar xz -C /usr/local/bin helm-docs
+
+      - name: Generate helm-docs
+        env:
+          CHART_PATH: ${{ inputs.path }}
+        run: |
+          helm-docs --chart-search-root "$CHART_PATH" --log-level warning
+
       - name: Login to Harbor (OCI)
         env:
           HARBOR_REGISTRY: ${{ secrets.HARBOR_REGISTRY }}

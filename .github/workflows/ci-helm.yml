@@ -97,8 +97,10 @@ jobs:
         run: ct lint --chart-dirs "$(dirname "${{ inputs.path }}")" --charts "${{ inputs.path }}"
 
   helm-docs:
-    name: Verify README is in sync with values.yaml
+    name: Generate and push helm-docs
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v6
 
@@ -115,17 +117,30 @@ jobs:
           if [ -f "${{ inputs.path }}/README.md.gotmpl" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::No README.md.gotmpl in ${{ inputs.path }} — skipping helm-docs check."
+            echo "::notice::No README.md.gotmpl in ${{ inputs.path }} — skipping helm-docs."
             echo "run=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Regenerate README and diff
-        if: steps.gate.outputs.run == 'true'
+      - name: Detect helm-docs loop
+        id: loop-check
+        run: |
+          LAST_MSG=$(git log -1 --pretty=%s)
+          if [[ "$LAST_MSG" == *"chore: update helm-docs"* ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate and push helm-docs
+        if: steps.gate.outputs.run == 'true' && steps.loop-check.outputs.skip != 'true'
         run: |
           helm-docs --chart-search-root "${{ inputs.path }}" --log-level warning
           if ! git diff --exit-code "${{ inputs.path }}/README.md"; then
-            echo "::error::README.md is out of sync with values.yaml / README.md.gotmpl. Run 'helm-docs --chart-search-root ${{ inputs.path }}' locally and commit the result."
-            exit 1
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add "${{ inputs.path }}/README.md"
+            git commit -m "chore: update helm-docs"
+            git push
           fi
 
   kubeconform:
