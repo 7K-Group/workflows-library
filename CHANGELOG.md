@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.2](https://github.com/7K-Hiroba/workflows-library/compare/v1.6.1...v1.6.2) (2026-05-27)
+
+
+### Bug Fixes
+
+* remove ci blocker for helm-docs ([406f2e3](https://github.com/7K-Hiroba/workflows-library/commit/406f2e3d78c9b9cce581ce8860fa4b95652de8cf))
+
 ## [1.6.1](https://github.com/7K-Hiroba/workflows-library/compare/v1.6.0...v1.6.1) (2026-05-27)
 
 
