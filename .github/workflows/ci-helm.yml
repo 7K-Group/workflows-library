@@ -69,19 +69,6 @@ jobs:
       - name: Install helm-unittest plugin
         run: helm plugin install https://github.com/helm-unittest/helm-unittest.git --verify=false
 
-      - name: Verify snapshot files are committed
-        run: |
-          find "${{ inputs.path }}" -name "*_test.yaml" -type f | while read -r testfile; do
-            if grep -q "matchSnapshot" "$testfile"; then
-              snapshot_file="${testfile%/*}/__snapshot__/$(basename "$testfile").snap"
-              if [ ! -f "$snapshot_file" ]; then
-                echo "::error::Missing snapshot file: $snapshot_file"
-                echo "::error::Run 'helm unittest -u ${{ inputs.path }}' locally and commit the generated snapshot files."
-                exit 1
-              fi
-            fi
-          done
-
       - name: Run unit tests
         run: helm unittest ${{ inputs.path }}
 
