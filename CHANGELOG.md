@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/7K-Hiroba/workflows-library/compare/v1.6.0...v1.6.1) (2026-05-27)
+
+
+### Bug Fixes
+
+* move helm-docs gen to automatic and run before release for proper version pin ([f90f4f3](https://github.com/7K-Hiroba/workflows-library/commit/f90f4f3b25d06aeb56a21b9093e5d9e5a7ecbdd1))
+
 ## [1.6.0](https://github.com/7K-Hiroba/workflows-library/compare/v1.5.4...v1.6.0) (2026-05-27)
 
 
