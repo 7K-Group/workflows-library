@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/7K-Hiroba/workflows-library/compare/v1.5.4...v1.6.0) (2026-05-27)
+
+
+### Features
+
+* add snapshot empty use case on helm test ([128630a](https://github.com/7K-Hiroba/workflows-library/commit/128630ab7946f83bcdc48227715c218e6b63aed9))
+
 ## [1.5.4](https://github.com/7K-Hiroba/workflows-library/compare/v1.5.3...v1.5.4) (2026-05-26)
 
 
