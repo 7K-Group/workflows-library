@@ -52,5 +52,16 @@ runs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add "${{ inputs.path }}/README.md"
           git commit -m "chore: update helm-docs"
-          git push
+
+          if git symbolic-ref --quiet HEAD >/dev/null 2>&1; then
+            git push
+          else
+            # Detached HEAD: push to the branch referenced by GITHUB_REF_NAME
+            BRANCH="${GITHUB_REF_NAME}"
+            if [ -n "$BRANCH" ] && [[ ! "$BRANCH" == refs/* ]]; then
+              git push origin "HEAD:${BRANCH}"
+            else
+              echo "::warning::Cannot push from detached HEAD (ref: ${BRANCH:-none}). Skipping push."
+            fi
+          fi
         fi
