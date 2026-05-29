@@ -65,7 +65,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: ./.github/actions/helm-docs
+      - uses: ${{ github.repository }}/.github/actions/helm-docs@${{ github.ref }}
         with:
           path: ${{ inputs.path }}
 

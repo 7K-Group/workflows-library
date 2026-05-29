@@ -104,7 +104,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: ./.github/actions/helm-docs
+      - uses: ${{ github.repository }}/.github/actions/helm-docs@${{ github.ref }}
         with:
           path: ${{ inputs.path }}
 
