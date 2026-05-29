@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/7K-Hiroba/workflows-library/compare/v1.7.7...v1.8.0) (2026-05-29)
+
+
+### Features
+
+* create dedicated workflow for helm-docs ci ([#73](https://github.com/7K-Hiroba/workflows-library/issues/73)) ([cf90569](https://github.com/7K-Hiroba/workflows-library/commit/cf905696bf051b1d08ede1520b0cade32472c84d))
+
 ## [1.7.7](https://github.com/7K-Hiroba/workflows-library/compare/v1.7.6...v1.7.7) (2026-05-29)
 
 
