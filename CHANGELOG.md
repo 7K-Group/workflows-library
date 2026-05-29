@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.6](https://github.com/7K-Hiroba/workflows-library/compare/v1.7.5...v1.7.6) (2026-05-29)
+
+
+### Bug Fixes
+
+* target head ref in helm-docs action ([4596cb2](https://github.com/7K-Hiroba/workflows-library/commit/4596cb29696b3cf97d1b5873e0a21385f4f1ce3d))
+
 ## [1.7.5](https://github.com/7K-Hiroba/workflows-library/compare/v1.7.4...v1.7.5) (2026-05-29)
 
 
