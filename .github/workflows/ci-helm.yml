@@ -102,46 +102,9 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
-
-      - name: Install helm-docs
-        env:
-          HELM_DOCS_VERSION: "1.14.2"
-        run: |
-          curl -fsSL "https://github.com/norwoodj/helm-docs/releases/download/v${HELM_DOCS_VERSION}/helm-docs_${HELM_DOCS_VERSION}_Linux_x86_64.tar.gz" \
-            | tar xz -C /usr/local/bin helm-docs
-
-      - name: Skip when no README.md.gotmpl is present
-        id: gate
-        run: |
-          if [ -f "${{ inputs.path }}/README.md.gotmpl" ]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::notice::No README.md.gotmpl in ${{ inputs.path }} — skipping helm-docs."
-            echo "run=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Detect helm-docs loop
-        id: loop-check
-        run: |
-          LAST_MSG=$(git log -1 --pretty=%s)
-          if [[ "$LAST_MSG" == *"chore: update helm-docs"* ]]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Generate and push helm-docs
-        if: steps.gate.outputs.run == 'true' && steps.loop-check.outputs.skip != 'true'
-        run: |
-          helm-docs --chart-search-root "${{ inputs.path }}" --log-level warning
-          if [ -n "$(git diff -- "${{ inputs.path }}/README.md")" ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add "${{ inputs.path }}/README.md"
-            git commit -m "chore: update helm-docs"
-            git push
-          fi
+      - uses: ./.github/actions/helm-docs
+        with:
+          path: ${{ inputs.path }}
 
   kubeconform:
     runs-on: ubuntu-latest
