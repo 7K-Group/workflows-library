@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/7K-Hiroba/workflows-library/compare/v1.7.0...v1.7.1) (2026-05-29)
+
+
+### Bug Fixes
+
+* add missing helm docs composite action ([dd4a905](https://github.com/7K-Hiroba/workflows-library/commit/dd4a9057ace81c4ddbba5d444e334570d062c2b1))
+
 ## [1.7.0](https://github.com/7K-Hiroba/workflows-library/compare/v1.6.2...v1.7.0) (2026-05-29)
 
 
