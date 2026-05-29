@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.5](https://github.com/7K-Hiroba/workflows-library/compare/v1.7.4...v1.7.5) (2026-05-29)
+
+
+### Bug Fixes
+
+* helm-docs not pushing on pull-request trigger ([2296b40](https://github.com/7K-Hiroba/workflows-library/commit/2296b40972f96fe45a44383b10591fcb204b22f2))
+
 ## [1.7.4](https://github.com/7K-Hiroba/workflows-library/compare/v1.7.3...v1.7.4) (2026-05-29)
 
 
