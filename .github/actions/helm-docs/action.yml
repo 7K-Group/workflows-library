@@ -59,7 +59,15 @@ runs:
             # Detached HEAD: prefer GITHUB_HEAD_REF (PR branch) over GITHUB_REF_NAME
             BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
             if [ -n "$BRANCH" ] && [[ ! "$BRANCH" == refs/* ]]; then
-              git push origin "HEAD:refs/heads/${BRANCH}"
+              # Rebase on remote to avoid non-fast-forward rejections
+              git fetch origin "${BRANCH}"
+              if git rebase "origin/${BRANCH}"; then
+                git push origin "HEAD:refs/heads/${BRANCH}"
+              else
+                git rebase --abort
+                echo "::error::Rebase failed. The branch has conflicting changes that cannot be auto-resolved."
+                exit 1
+              fi
             else
               echo "::warning::Cannot push from detached HEAD (ref: ${BRANCH:-none}). Skipping push."
             fi
