@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.7](https://github.com/7K-Hiroba/workflows-library/compare/v1.7.6...v1.7.7) (2026-05-29)
+
+
+### Bug Fixes
+
+* use rebase to prevent merge conflicts in helm-docs ([19d5ef7](https://github.com/7K-Hiroba/workflows-library/commit/19d5ef7c87e2346bc2de7ec509e38b8fce130208))
+
 ## [1.7.6](https://github.com/7K-Hiroba/workflows-library/compare/v1.7.5...v1.7.6) (2026-05-29)
 
 
