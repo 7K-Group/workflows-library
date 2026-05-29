@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.4](https://github.com/7K-Hiroba/workflows-library/compare/v1.7.3...v1.7.4) (2026-05-29)
+
+
+### Bug Fixes
+
+* hardcode workflows-lib reference ([32b905c](https://github.com/7K-Hiroba/workflows-library/commit/32b905c51195a7742d9bc6f7777f3f4a2e88adbc))
+
 ## [1.7.3](https://github.com/7K-Hiroba/workflows-library/compare/v1.7.2...v1.7.3) (2026-05-29)
 
 
