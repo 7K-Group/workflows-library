@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.2](https://github.com/7K-Hiroba/workflows-library/compare/v1.7.1...v1.7.2) (2026-05-29)
+
+
+### Bug Fixes
+
+* run checkout outside helm-docs composite action ([0bf205c](https://github.com/7K-Hiroba/workflows-library/commit/0bf205cd9c47f3f9653b65f8883ef27d4efc0462))
+
 ## [1.7.1](https://github.com/7K-Hiroba/workflows-library/compare/v1.7.0...v1.7.1) (2026-05-29)
 
 
