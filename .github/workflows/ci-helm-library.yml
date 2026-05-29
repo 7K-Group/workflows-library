@@ -58,19 +58,6 @@ jobs:
       - name: Validate JSON syntax
         run: python3 -c "import json; json.load(open('${{ inputs.path }}/values.schema.json'))"
 
-  helm-docs:
-    name: Generate and push helm-docs
-    needs: verify-library
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: 7K-Hiroba/workflows-library/.github/actions/helm-docs@v1
-        with:
-          path: ${{ inputs.path }}
-
   chart-testing:
     needs: verify-library
     runs-on: ubuntu-latest

@@ -96,18 +96,6 @@ jobs:
       - name: Run chart-testing lint
         run: ct lint --chart-dirs "$(dirname "${{ inputs.path }}")" --charts "${{ inputs.path }}"
 
-  helm-docs:
-    name: Generate and push helm-docs
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: 7K-Hiroba/workflows-library/.github/actions/helm-docs@v1
-        with:
-          path: ${{ inputs.path }}
-
   kubeconform:
     runs-on: ubuntu-latest
     steps:

@@ -1,0 +1,72 @@
+name: "CI: Helm Docs"
+
+on:
+  workflow_call:
+
+jobs:
+  helm-docs:
+    name: Generate and push helm-docs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install helm-docs
+        env:
+          HELM_DOCS_VERSION: "1.14.2"
+        run: |
+          curl -fsSL "https://github.com/norwoodj/helm-docs/releases/download/v${HELM_DOCS_VERSION}/helm-docs_${HELM_DOCS_VERSION}_Linux_x86_64.tar.gz" \
+            | tar xz -C /usr/local/bin helm-docs
+
+      - name: Find charts with README.md.gotmpl
+        id: find-charts
+        run: |
+          charts=""
+          while IFS= read -r -d '' gotmpl; do
+            chart_dir="$(dirname "$gotmpl")"
+            charts="${charts}${chart_dir} "
+          done < <(find helm -name "README.md.gotmpl" -type f -print0)
+          echo "charts=${charts}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate and push helm-docs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          has_changes=false
+          for chart_dir in ${{ steps.find-charts.outputs.charts }}; do
+            helm-docs --chart-search-root "$chart_dir" --log-level warning
+            if [ -n "$(git diff -- "$chart_dir/README.md")" ]; then
+              git add "$chart_dir/README.md"
+              has_changes=true
+            fi
+          done
+
+          if [ "$has_changes" = true ]; then
+            LAST_MSG=$(git log -1 --pretty=%s)
+            if [[ "$LAST_MSG" == *"chore: update helm-docs"* ]]; then
+              echo "::notice::helm-docs commit already present, skipping to avoid loop"
+              exit 0
+            fi
+
+            git commit -m "chore: update helm-docs"
+
+            if git symbolic-ref --quiet HEAD >/dev/null 2>&1; then
+              git push
+            else
+              BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+              if [ -n "$BRANCH" ] && [[ ! "$BRANCH" == refs/* ]]; then
+                git fetch origin "${BRANCH}"
+                if git rebase "origin/${BRANCH}"; then
+                  git push origin "HEAD:refs/heads/${BRANCH}"
+                else
+                  git rebase --abort
+                  echo "::error::Rebase failed. The branch has conflicting changes that cannot be auto-resolved."
+                  exit 1
+                fi
+              else
+                echo "::warning::Cannot push from detached HEAD (ref: ${BRANCH:-none}). Skipping push."
+              fi
+            fi
+          fi
