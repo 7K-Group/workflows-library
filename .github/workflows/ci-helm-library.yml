@@ -1,15 +1,5 @@
 name: "CI: Helm Library"
 
-# CI for Helm *library* charts (Chart.yaml `type: library`). The standard
-# ci-helm.yml can't be used because `helm template` and kubeconform both fail
-# with "library charts are not installable" — libraries ship only `define`d
-# named templates and have no installable resources of their own.
-#
-# This workflow keeps the jobs that DO apply:
-#   - helm lint
-#   - values.schema.json presence (libraries ship a reference schema)
-#   - ct lint (version-increment + maintainer-less validation)
-
 on:
   workflow_call:
     inputs:
