@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.1](https://github.com/7K-Hiroba/workflows-library/compare/v1.8.0...v1.8.1) (2026-05-31)
+
+
+### Bug Fixes
+
+* run helm dependency update ([#75](https://github.com/7K-Hiroba/workflows-library/issues/75)) ([d99e2b2](https://github.com/7K-Hiroba/workflows-library/commit/d99e2b22ceb4151fafdaa15b6b0d80b64bba9329))
+
 ## [1.8.0](https://github.com/7K-Hiroba/workflows-library/compare/v1.7.7...v1.8.0) (2026-05-29)
 
 
