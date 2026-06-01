@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/7K-Hiroba/workflows-library/compare/v1.8.1...v1.9.0) (2026-06-01)
+
+
+### Features
+
+* trivy now creates report instead of blocking prs ([#77](https://github.com/7K-Hiroba/workflows-library/issues/77)) ([af0acec](https://github.com/7K-Hiroba/workflows-library/commit/af0acec1003a9da48815910e09efbffb72bd74c0))
+
 ## [1.8.1](https://github.com/7K-Hiroba/workflows-library/compare/v1.8.0...v1.8.1) (2026-05-31)
 
 
