@@ -48,7 +48,7 @@ jobs:
         id: hiroba-token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.HIROBA_DISPATCH_APP_ID }}
+          client-id: ${{ secrets.HIROBA_DISPATCH_APP_ID }}
           private-key: ${{ secrets.HIROBA_DISPATCH_APP_PRIVATE_KEY }}
           owner: 7K-Hiroba
           repositories: Hiroba
