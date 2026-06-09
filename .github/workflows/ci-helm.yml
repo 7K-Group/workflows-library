@@ -106,7 +106,12 @@ jobs:
         uses: helm/chart-testing-action@v2
 
       - name: Run chart-testing lint
-        run: ct lint --chart-dirs "$(dirname "${{ inputs.path }}")" --charts "${{ inputs.path }}"
+        run: |
+          ct_args=(--chart-dirs "$(dirname "${{ inputs.path }}")" --charts "${{ inputs.path }}")
+          if [ -f ".ct.yaml" ]; then
+            ct_args+=(--config ".ct.yaml")
+          fi
+          ct lint "${ct_args[@]}"
 
   kubeconform:
     runs-on: ubuntu-latest
