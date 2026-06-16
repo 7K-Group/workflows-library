@@ -2,7 +2,7 @@
 
 Reusable GitHub Actions workflows for the 7KGroup ecosystem.
 
-All application repositories scaffolded by [Hiroba](https://github.com/7K-Hiroba/Hiroba) reference these workflows via `uses: 7K-Hiroba/workflows-library/.github/workflows/<workflow>.yml@v1`.
+All 7KGroup repositories can reference these workflows via `uses: 7K-Group/workflows-library/.github/workflows/<workflow>.yml@v1`.
 
 ## Architecture
 
@@ -79,7 +79,7 @@ release-please.yml                release.yml (dispatcher)
 # In a consuming repo's ci.yml:
 jobs:
   helm-base:
-    uses: 7K-Hiroba/workflows-library/.github/workflows/ci.yml@v1
+    uses: 7K-Group/workflows-library/.github/workflows/ci.yml@v1
     with:
       stack: helm
       path: helm/base

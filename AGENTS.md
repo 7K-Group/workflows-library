@@ -1,6 +1,6 @@
 # Agent Notes
 
-This repo is a **GitHub Actions reusable-workflow library**, not an application. Consuming Hiroba repos call these workflows via `uses: 7K-Hiroba/workflows-library/.github/workflows/<file>.yml@v1`.
+This repo is a **GitHub Actions reusable-workflow library**, not an application. Consuming 7KGroup repos call these workflows via `uses: 7K-Group/workflows-library/.github/workflows/<file>.yml@v1`.
 
 ## Local validation
 
@@ -26,7 +26,7 @@ yamllint -d "{extends: default, rules: {line-length: {max: 200}, truthy: disable
 - Helm CI (`ci-helm.yml`) requires `values.schema.json` at the chart root and supports an optional `.ci-api-versions` file for extra `--api-versions` flags during `helm template` and kubeconform.
 - `ci-helm-library.yml` is only for charts with `type: library` in `Chart.yaml`; use `ci-helm.yml` for application charts.
 - `ci-helm-docs.yml` auto-commits generated `README.md` changes. It skips if the last commit already starts with `chore: update helm-docs` to avoid loops.
-- `release-docs.yml` publishes TechDocs to S3 (`APPDOCS_S3_BUCKET`) and dispatches `docs-updated` to the `7K-Hiroba/Hiroba` repo via a GitHub App.
+- `release-docs.yml` publishes TechDocs to S3 (`APPDOCS_S3_BUCKET`) and dispatches `docs-updated` to a configurable owner/repo (default `7K-Group/Hiroba`) via a GitHub App.
 - `release-crossplane.yml` currently only validates YAML; the xpkg push is stubbed out.
 
 ## Versioning
