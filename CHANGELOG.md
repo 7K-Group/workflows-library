@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/7K-Group/workflows-library/compare/v1.0.0...v1.1.0) (2026-06-16)
+
+
+### Features
+
+* generalize lib ([218b818](https://github.com/7K-Group/workflows-library/commit/218b8183b38d3b341a6638c1f81280419baa0227))
+
 ## 1.0.0 (2026-06-16)
 
 
