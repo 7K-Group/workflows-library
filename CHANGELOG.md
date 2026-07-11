@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/7K-Group/workflows-library/compare/v1.2.0...v1.2.1) (2026-07-11)
+
+
+### Bug Fixes
+
+* fix image registry bad local ([2aa1044](https://github.com/7K-Group/workflows-library/commit/2aa1044e21be3f07758b7ded99135a956065420a))
+
 ## [1.2.0](https://github.com/7K-Group/workflows-library/compare/v1.1.1...v1.2.0) (2026-07-11)
 
 
