@@ -11,7 +11,7 @@ files (`ci-<stack>.yml`, `release-<stack>.yml`) directly.
 
 CI: `ci-app`, `ci-cdk8s`, `ci-go-function`, `ci-crossplane`, `ci-crossplane-e2e`,
 `ci-e2e-kind`, `ci-helm`, `ci-helm-library`, `ci-helm-docs`, `ci-docs`, `ci-kubeconform`,
-`ci-lint-pr-title`, `ci-secret-scan`.
+`ci-lint-pr-title`.
 
 Release: `release-app`, `release-crossplane`, `release-function`, `release-helm`,
 `release-docs`, `release-please`. Promotion (re-tag by digest): `promote`.

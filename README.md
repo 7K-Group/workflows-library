@@ -30,8 +30,7 @@ to the latest `v1.x.x` on every release.
 | `ci-helm-docs.yml`      | regenerate + auto-commit chart README from `README.md.gotmpl`                                | —                                                                                     |
 | `ci-docs.yml`           | markdown lint                                                                                | `path`                                                                                |
 | `ci-kubeconform.yml`    | kubeconform + pluto on raw manifests                                                         | `path`                                                                                |
-| `ci-lint-pr-title.yml`  | Conventional-Commit PR title lint                                                            | —                                                                                     |
-| `ci-secret-scan.yml`    | gitleaks secret scanning (full history)                                                      | —                                                                                     |
+| `ci-lint-pr-title.yml`  | Conventional-Commit PR title lint                                                            | —                                                     | —                                                                                     |
 | `ci-crossplane-e2e.yml` | build xpkg → install into ephemeral kind via local registry → assert XRDs `Established`      | `path`, `image`, `prebuild`, `crossplane-version`, `kube-version`                     |
 
 Helm charts require `values.schema.json`; add `.ci-api-versions` for custom CRDs.
@@ -114,7 +113,6 @@ jobs:
 - **Deploy-time enforcement:** `policies/sigstore-clusterimagepolicy.yaml` is a reference
   Sigstore `ClusterImagePolicy` that rejects unsigned platform artifacts — copy it into
   cluster GitOps and substitute the Harbor registry/project placeholders.
-- **Secret scanning:** `ci-secret-scan.yml` (gitleaks) runs on PRs.
 - **Harbor auth:** releases use a Harbor robot user (`HARBOR_REGISTRY` / `HARBOR_PROJECT` /
   `HARBOR_ROBOT_NAME` / `HARBOR_ROBOT_TOKEN`, supplied via `secrets: inherit`). `id-token: write`
   on publish jobs is for keyless cosign signing only.
