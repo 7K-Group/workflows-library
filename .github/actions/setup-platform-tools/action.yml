@@ -34,7 +34,7 @@ runs:
       run: |
         curl -fsSL "https://releases.crossplane.io/stable/${{ inputs.crossplane-version }}/bin/linux_amd64/crossplane" -o /usr/local/bin/crossplane
         chmod +x /usr/local/bin/crossplane
-        crossplane version --client
+        crossplane --version
 
     - name: Install kubeconform
       if: ${{ inputs.kubeconform-version != '' }}
