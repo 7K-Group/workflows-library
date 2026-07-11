@@ -1,0 +1,5 @@
+# chart-testing config for the workflows-library e2e pipeline (library-e2e.yml).
+# Fixture charts live in this repo, so there is no meaningful target branch to
+# diff against and version bumps are not enforced here.
+check-version-increment: false
+validate-maintainers: false

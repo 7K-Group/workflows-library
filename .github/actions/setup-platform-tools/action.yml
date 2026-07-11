@@ -1,5 +1,5 @@
 name: "Setup platform tools"
-description: "Install the Crossplane CLI, Helm, kubeconform and pluto with pinned versions (single source for CI toolchains)."
+description: "Install the Crossplane CLI, Helm, kubeconform and pluto with pinned versions (single source for CI toolchains). Pass an empty string for any tool to skip it. Defaults are the repo-wide standard versions from .tool-versions — the library-ci version-sync check enforces they stay in sync."
 
 inputs:
   crossplane-version:
@@ -9,15 +9,15 @@ inputs:
   helm-version:
     description: "Helm version (empty to skip)."
     required: false
-    default: ""
+    default: "v4.1.4"
   kubeconform-version:
     description: "kubeconform version (empty to skip)."
     required: false
-    default: ""
+    default: "v0.6.7"
   pluto-version:
     description: "pluto version (empty to skip)."
     required: false
-    default: ""
+    default: "5.21.0"
 
 runs:
   using: composite

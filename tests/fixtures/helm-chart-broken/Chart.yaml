@@ -1,0 +1,10 @@
+---
+apiVersion: v2
+name: library-fixture-broken
+description: Minimal chart used by the workflows-library e2e pipeline to exercise ci-helm and release-helm.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+icon: https://raw.githubusercontent.com/cncf/artwork/main/projects/kubernetes/icon/color/kubernetes-icon-color.png
+maintainers:
+  - name: 7KGroup

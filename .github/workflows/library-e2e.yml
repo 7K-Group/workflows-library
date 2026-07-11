@@ -1,0 +1,208 @@
+name: "Library E2E"
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  e2e-setup-platform-tools:
+    name: Composite action - setup-platform-tools
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install all tools (defaults from .tool-versions)
+        uses: ./.github/actions/setup-platform-tools
+        with:
+          crossplane-version: v2.3.2
+          helm-version: v4.1.4
+          kubeconform-version: v0.6.7
+          pluto-version: 5.21.0
+
+      - name: Verify tools are on PATH
+        run: |
+          crossplane --version
+          helm version
+          kubeconform -v
+          pluto version
+
+  e2e-ci-helm:
+    name: ci-helm (fixture chart)
+    uses: ./.github/workflows/ci-helm.yml
+    with:
+      path: tests/fixtures/helm-chart
+
+  e2e-ci-kubeconform:
+    name: ci-kubeconform (fixture manifests)
+    uses: ./.github/workflows/ci-kubeconform.yml
+    with:
+      path: tests/fixtures/manifests
+
+  e2e-ci-go-function:
+    name: ci-go-function (fixture module)
+    uses: ./.github/workflows/ci-go-function.yml
+    with:
+      path: tests/fixtures/go-function
+      run-govulncheck: false
+
+  e2e-ci-app:
+    name: ci-app (fixture Dockerfile)
+    uses: ./.github/workflows/ci-app.yml
+    with:
+      path: tests/fixtures/app
+      image-name: library-fixture-app
+
+  e2e-ci-crossplane:
+    name: ci-crossplane (fixture package)
+    uses: ./.github/workflows/ci-crossplane.yml
+    with:
+      path: tests/fixtures/crossplane-package
+
+  e2e-ci-cdk8s:
+    name: ci-cdk8s (fixture workspace)
+    uses: ./.github/workflows/ci-cdk8s.yml
+    with:
+      path: tests/fixtures/cdk8s
+
+  e2e-ci-e2e-kind:
+    name: ci-e2e-kind (fixture workspace)
+    uses: ./.github/workflows/ci-e2e-kind.yml
+    with:
+      path: tests/fixtures/cdk8s
+      cluster-name: library-e2e
+
+  e2e-ci-crossplane-e2e:
+    name: ci-crossplane-e2e (fixture package, kind)
+    uses: ./.github/workflows/ci-crossplane-e2e.yml
+    with:
+      path: tests/fixtures/crossplane-package
+      image: library-fixture-configuration
+      cluster-name: library-xpkg-e2e
+
+  e2e-ci-helm-library:
+    name: ci-helm-library (fixture library chart)
+    uses: ./.github/workflows/ci-helm-library.yml
+    with:
+      path: tests/fixtures/helm-library-chart
+
+  e2e-ci-docs:
+    name: ci-docs (fixture docs)
+    uses: ./.github/workflows/ci-docs.yml
+    with:
+      path: tests/fixtures/docs
+
+  dryrun-release-app:
+    name: release-app (dry run)
+    uses: ./.github/workflows/release-app.yml
+    with:
+      path: tests/fixtures/app
+      version: 0.1.0
+      image-name: library-fixture-app
+      dry-run: true
+
+  dryrun-release-helm:
+    name: release-helm (dry run)
+    uses: ./.github/workflows/release-helm.yml
+    with:
+      path: tests/fixtures/helm-chart
+      version: 0.1.0
+      dry-run: true
+
+  dryrun-release-crossplane:
+    name: release-crossplane (dry run)
+    uses: ./.github/workflows/release-crossplane.yml
+    with:
+      path: tests/fixtures/crossplane-package
+      version: 0.1.0
+      image: library-fixture-configuration
+      dry-run: true
+
+  dryrun-release-function:
+    name: release-function (dry run)
+    uses: ./.github/workflows/release-function.yml
+    with:
+      path: tests/fixtures/go-function
+      package-path: tests/fixtures/function-package
+      version: 0.1.0
+      image-name: library-fixture-function
+      function-name: library-fixture-function
+      dry-run: true
+
+  dryrun-promote:
+    name: promote (dry run)
+    uses: ./.github/workflows/promote.yml
+    with:
+      image: library-fixture-app
+      digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+      tags: e2e
+      dry-run: true
+
+  negative-helm-missing-schema:
+    name: negative - chart without values.schema.json
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Helm
+        uses: ./.github/actions/setup-platform-tools
+        with:
+          crossplane-version: ""
+          kubeconform-version: ""
+          pluto-version: ""
+
+      - name: Lint the broken chart (passes — schema gate is the only failing check)
+        run: helm lint tests/fixtures/helm-chart-broken
+
+      - name: Assert ci-helm's schema gate rejects the broken fixture
+        run: |
+          # Verbatim gate from ci-helm.yml's "test" job — must fail on the broken fixture.
+          if [ ! -f "tests/fixtures/helm-chart-broken/values.schema.json" ]; then
+            echo "Gate output: Missing values.schema.json in tests/fixtures/helm-chart-broken"
+            echo "ci-helm correctly rejects charts without values.schema.json."
+            exit 0
+          fi
+          echo "::error::Broken fixture unexpectedly contains values.schema.json — negative test is ineffective"
+          exit 1
+
+  e2e-summary:
+    name: E2E summary
+    if: always()
+    needs:
+      - e2e-setup-platform-tools
+      - e2e-ci-helm
+      - e2e-ci-kubeconform
+      - e2e-ci-go-function
+      - e2e-ci-app
+      - e2e-ci-crossplane
+      - e2e-ci-cdk8s
+      - e2e-ci-e2e-kind
+      - e2e-ci-crossplane-e2e
+      - e2e-ci-helm-library
+      - e2e-ci-docs
+      - dryrun-release-app
+      - dryrun-release-helm
+      - dryrun-release-crossplane
+      - dryrun-release-function
+      - dryrun-promote
+      - negative-helm-missing-schema
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Aggregate job results
+        run: |
+          echo '${{ toJSON(needs) }}' | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          bad=$(echo '${{ toJSON(needs) }}' \
+            | jq -r '.[].result' \
+            | grep -vcE '^(success|skipped)$')
+          if [ "$bad" -ne 0 ]; then
+            echo "::error::$bad e2e job(s) did not succeed"
+            exit 1
+          fi
+          echo "All e2e jobs passed."

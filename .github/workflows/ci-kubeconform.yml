@@ -12,6 +12,16 @@ on:
         type: string
         default: "1.31.0"
         description: "Target Kubernetes version for schema validation"
+      kubeconform-version:
+        required: false
+        type: string
+        default: "v0.6.7"
+        description: "kubeconform version override (defaults to the repo-wide standard from .tool-versions)"
+      pluto-version:
+        required: false
+        type: string
+        default: "5.21.0"
+        description: "pluto version override (defaults to the repo-wide standard from .tool-versions)"
 
 jobs:
   validate:
@@ -21,17 +31,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Install kubeconform
-        run: |
-          KUBECONFORM_VERSION="v0.6.7"
-          curl -fsSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
-            | tar xz -C /usr/local/bin kubeconform
-
-      - name: Install pluto
-        run: |
-          PLUTO_VERSION="5.21.0"
-          curl -fsSL "https://github.com/FairwindsOps/pluto/releases/download/v${PLUTO_VERSION}/pluto_${PLUTO_VERSION}_linux_amd64.tar.gz" \
-            | tar xz -C /usr/local/bin pluto
+      - name: Install kubeconform + pluto
+        uses: 7K-Group/workflows-library/.github/actions/setup-platform-tools@v1
+        with:
+          crossplane-version: ""
+          helm-version: ""
+          kubeconform-version: ${{ inputs.kubeconform-version }}
+          pluto-version: ${{ inputs.pluto-version }}
 
       - name: Validate manifests
         run: |

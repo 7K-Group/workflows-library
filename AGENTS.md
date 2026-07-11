@@ -24,13 +24,21 @@ Release: `release-app`, `release-crossplane`, `release-function`, `release-helm`
   reports a "deadlock for concurrency group" and cancels everything. Reusable workflows keep
   `timeout-minutes` per job; cancellation policy lives with the caller
   (CI `cancel-in-progress: true`, release `false`).
-- Third-party actions are SHA-pinned by Renovate (`pinDigests: true`); keep first-party on `@v1`.
+- **Release workflows** (`release-*.yml`, `promote.yml`) pin every third-party action to a
+  full SHA (with a `# vX` comment for Renovate `pinDigests`); first-party refs stay on `@v1`.
+  `library-ci.yml`'s `pin-check` job enforces this. CI workflows stay on major tags.
 - Tool installers live in the composite action `.github/actions/setup-platform-tools`
   (crossplane/helm/kubeconform/pluto). Reference it ONLY via the fully-qualified form
   `7K-Group/workflows-library/.github/actions/setup-platform-tools@v1` — a relative `uses: ./...`
-  path resolves against the *calling* repo's checkout and breaks consumers. Canonical versions
-  are in `.tool-versions` — keep the action's defaults in sync when bumping. This requires the
+  path resolves against the *calling* repo's checkout and breaks consumers. This requires the
   repo to stay public: composite actions in private repos cannot be consumed cross-repo.
+- **Version management**: `.tool-versions` holds the canonical tool versions; the composite
+  action's input defaults MUST mirror them, and any `*-version` workflow input default must
+  match too. `library-ci.yml`'s `version-sync` job enforces all three stay in sync, and its
+  install guard fails any workflow that installs crossplane/helm/kubeconform/pluto directly
+  (curl or `azure/setup-helm`) instead of via the action. Workflows expose `helm-version` /
+  `kubeconform-version` / `pluto-version` overrides defaulting to the standard version.
+  In the action, pass `""` for tools you don't need (defaults install ALL four).
 - Release workflows publish to **Harbor** and require secrets `HARBOR_REGISTRY`,
   `HARBOR_PROJECT`, `HARBOR_ROBOT_NAME`, `HARBOR_ROBOT_TOKEN` (consumers use `secrets: inherit`).
 - `release-app` / `release-function` take a **short** image name and build the full ref as
@@ -42,6 +50,9 @@ Release: `release-app`, `release-crossplane`, `release-function`, `release-helm`
   the local Docker cache — `docker pull` first in CI). Push with `crossplane xpkg push -f <file> <registry>/<repo>/<name>:<semver>` (tag must be semver).
 - cdk8s repos are npm-workspace monorepos; `ci-cdk8s` runs at the workspace root (`path: .`).
 - Helm charts require `values.schema.json`; library charts use `ci-helm-library`, not `ci-helm`.
+- Helm docs generation lives in `ci-helm-docs` (auto-commits `README.md` from
+  `README.md.gotmpl`, `chart-root` input selects the search dir). Release workflows never
+  generate docs — the released chart must already have them.
 
 ## Local validation
 
@@ -53,9 +64,43 @@ yamllint -d "{extends: default, rules: {line-length: {max: 200}, truthy: disable
 # actionlint (run in CI via raven-actions/actionlint@v2)
 ```
 
+## E2E testing (fixtures + dry runs)
+
+`library-e2e.yml` (PRs) exercises the reusable workflows and the composite action for
+real, using minimal fixtures under `tests/fixtures/`:
+
+- `helm-chart` — app chart with `values.schema.json` + helm-unittest suite (feeds `ci-helm`, `release-helm`)
+- `helm-chart-broken` — same chart WITHOUT `values.schema.json` (negative test: `ci-helm` must fail)
+- `helm-library-chart` — library-type chart (feeds `ci-helm-library`)
+- `manifests` — plain k8s manifests (feeds `ci-kubeconform`)
+- `go-function` — tiny Go module + Dockerfile (feeds `ci-go-function`, `release-function`)
+- `app` — minimal Dockerfile (feeds `ci-app`, `release-app`)
+- `crossplane-package` — Configuration meta + Composition + XRD (feeds `ci-crossplane`, `ci-crossplane-e2e`, `release-crossplane`)
+- `function-package` — Function meta for `release-function`'s embedded-runtime xpkg build
+- `cdk8s` — npm-workspace monorepo (one cdk8s package; feeds `ci-cdk8s`, `ci-e2e-kind`)
+- `docs` — Markdown file (feeds `ci-docs`)
+
+The composite action is tested via a relative `uses: ./.github/actions/setup-platform-tools`
+(works inside this repo's own workflows only — consumers must still use the fully-qualified
+`...@v1` form). `.ct.yaml` at the repo root disables chart-testing's version-increment and
+maintainer checks for the fixture charts (`ci-helm-library` keeps its own increment check —
+bump `helm-library-chart`'s `version` when touching it).
+
+Release workflows (`release-app`, `release-helm`, `release-crossplane`, `release-function`)
+and `promote` accept `dry-run: true`: they build/package/validate locally but skip Harbor
+login, push/re-tag, cosign sign/verify and SBOM attestation. Harbor secrets are optional and
+only validated when `dry-run` is false — the e2e pipeline calls them with no secrets at all.
+Keep `dry-run` false (the default) for real consumer releases.
+
+The negative-test job (`negative-helm-missing-schema`) lints the broken chart (passes) and
+then asserts ci-helm's schema gate verbatim rejects it — `continue-on-error` is not allowed on
+reusable-call jobs, so negative tests run as shell jobs. The final `e2e-summary` job
+aggregates all results — make it the required status check in branch protection.
+
 ## Repo CI / release
 
-- `library-ci.yml` (PRs): semantic PR-title lint + yamllint + actionlint.
+- `library-ci.yml` (PRs): semantic PR-title lint + yamllint + actionlint + version-sync
+  check + install guard + release pin-check.
 - `library-release.yml` (push to `main`): release-please (`simple`) → tag `vX.Y.Z` → force-update
   the `v1` major tag. Consumers pin `@v1`. Never create tags manually.
 

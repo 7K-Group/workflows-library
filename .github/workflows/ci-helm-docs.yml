@@ -2,6 +2,12 @@ name: "CI: Helm Docs"
 
 on:
   workflow_call:
+    inputs:
+      chart-root:
+        required: false
+        type: string
+        default: "helm"
+        description: "Directory to search for charts with README.md.gotmpl templates"
 
 jobs:
   helm-docs:
@@ -27,7 +33,7 @@ jobs:
           while IFS= read -r -d '' gotmpl; do
             chart_dir="$(dirname "$gotmpl")"
             charts="${charts}${chart_dir} "
-          done < <(find helm -name "README.md.gotmpl" -type f -print0)
+          done < <(find "${{ inputs.chart-root }}" -name "README.md.gotmpl" -type f -print0)
           echo "charts=${charts}" >> "$GITHUB_OUTPUT"
 
       - name: Generate and push helm-docs

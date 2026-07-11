@@ -38,10 +38,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6
 
       - name: Set up s5cmd
-        uses: peak/action-setup-s5cmd@main
+        uses: peak/action-setup-s5cmd@bde462e7399c68b4a9b05549d90b0e7d5c95e60f  # main
         with:
           version: v2.0.0
 
@@ -57,7 +57,7 @@ jobs:
 
       - name: Generate dispatch app token
         id: dispatch-token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3
         with:
           client-id: ${{ secrets.HIROBA_DISPATCH_APP_ID }}
           private-key: ${{ secrets.HIROBA_DISPATCH_APP_PRIVATE_KEY }}

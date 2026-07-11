@@ -1,0 +1,15 @@
+{
+  "name": "cdk8s-fixture",
+  "private": true,
+  "description": "Minimal npm-workspace monorepo used by the workflows-library e2e pipeline to exercise ci-cdk8s and ci-e2e-kind.",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "lint": "npm run lint --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "test:unit": "npm run test:unit --workspaces --if-present",
+    "synth": "npm run synth --workspaces --if-present",
+    "test:e2e": "npm run test:e2e --workspaces --if-present"
+  }
+}

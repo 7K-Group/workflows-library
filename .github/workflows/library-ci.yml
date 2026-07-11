@@ -30,3 +30,90 @@ jobs:
 
       - name: Lint with actionlint
         uses: raven-actions/actionlint@v2
+
+  version-sync:
+    name: Enforce single version source
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check .tool-versions against action defaults and workflow input defaults
+        run: |
+          pip install pyyaml
+          python3 - <<'PY'
+          import glob, re, sys, yaml
+
+          tv = {}
+          for line in open(".tool-versions"):
+              line = line.strip()
+              if line and not line.startswith("#"):
+                  k, v = line.split()
+                  tv[k] = v
+
+          PREFIX = {"crossplane": "v", "helm": "v", "kubeconform": "v", "pluto": ""}
+          errors = []
+
+          action = yaml.safe_load(open(".github/actions/setup-platform-tools/action.yml"))
+          for tool, pfx in PREFIX.items():
+              want = pfx + tv[tool]
+              got = action["inputs"][f"{tool}-version"]["default"]
+              if got != want:
+                  errors.append(f"action.yml default {tool}-version={got!r}, .tool-versions says {want!r}")
+
+          for wf in glob.glob(".github/workflows/*.yml"):
+              doc = yaml.safe_load(open(wf))
+              on = doc.get("on", doc.get(True)) or {}
+              inputs = (on.get("workflow_call") or {}).get("inputs") or {}
+              for name, spec in inputs.items():
+                  m = re.fullmatch(r"(crossplane|helm|kubeconform|pluto)-version", name)
+                  if m and isinstance(spec, dict) and "default" in spec:
+                      want = PREFIX[m.group(1)] + tv[m.group(1)]
+                      if spec["default"] != want:
+                          errors.append(f"{wf}: input {name} default {spec['default']!r}, want {want!r}")
+
+          if errors:
+              print("Version drift detected:\n" + "\n".join(errors))
+              sys.exit(1)
+          print("All tool versions in sync with .tool-versions")
+          PY
+
+      - name: Guard against direct tool installs outside the composite action
+        run: |
+          bad=0
+          if grep -rn --exclude=library-ci.yml "azure/setup-helm" .github/workflows/; then
+            echo "::error::Use 7K-Group/workflows-library/.github/actions/setup-platform-tools@v1 instead of azure/setup-helm"
+            bad=1
+          fi
+          if grep -rEn --exclude=library-ci.yml "curl[^|]*(releases\.crossplane\.io|yannh/kubeconform|FairwindsOps/pluto)" .github/workflows/; then
+            echo "::error::Install crossplane/kubeconform/pluto via the setup-platform-tools composite action, not curl"
+            bad=1
+          fi
+          exit $bad
+
+  pin-check:
+    name: Enforce SHA pins on release workflows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check release workflows pin third-party actions to full SHAs
+        run: |
+          bad=0
+          for f in .github/workflows/release-*.yml .github/workflows/promote.yml; do
+            while IFS= read -r line; do
+              ref=$(echo "$line" | sed -E 's/.*uses:[[:space:]]*([^ #]+).*/\1/')
+              case "$ref" in
+                ./*) continue ;;
+                7K-Group/*@v1) continue ;;
+                7K-Group/*)
+                  echo "::error file=$f::First-party ref must be @v1: $ref"
+                  bad=1
+                  continue ;;
+              esac
+              if ! echo "$ref" | grep -qE '@[0-9a-f]{40}$'; then
+                echo "::error file=$f::Third-party action must be pinned to a full SHA: $ref"
+                bad=1
+              fi
+            done < <(grep -E '^[[:space:]]*-?[[:space:]]*uses: ' "$f")
+          done
+          exit $bad

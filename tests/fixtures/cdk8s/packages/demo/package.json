@@ -1,0 +1,20 @@
+{
+  "name": "@fixture/demo",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test:unit": "node --test test/deps.test.mjs",
+    "synth": "ts-node main.ts",
+    "test:e2e": "node --test test/e2e/configmap.test.mjs"
+  },
+  "dependencies": {
+    "cdk8s": "^2.69.0",
+    "constructs": "^10.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.0"
+  }
+}
