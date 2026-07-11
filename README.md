@@ -102,8 +102,10 @@ jobs:
 
 - **Action pinning:** third-party actions are pinned to commit SHAs by Renovate
   (`renovate.json5` → `pinDigests: true`). First-party calls stay on the moving `@v1`.
-- **Concurrency + timeouts:** every reusable workflow sets `concurrency` (CI cancels
-  superseded runs; releases do not) and `timeout-minutes` per job.
+- **Concurrency + timeouts:** callers set `concurrency` (CI cancels superseded runs;
+  releases do not). Reusable workflows never declare `concurrency` (it deadlocks with the
+  caller's group — `${{ github.workflow }}` resolves to the caller) and set
+  `timeout-minutes` per job instead.
 - **Signing + verification:** `release-app` / `release-crossplane` / `release-function`
   sign with keyless cosign, attach an SPDX SBOM, and **self-verify** the signature and
   attestation against the workflow identity before finishing.

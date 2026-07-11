@@ -18,8 +18,12 @@ Release: `release-app`, `release-crossplane`, `release-function`, `release-helm`
 
 ## Conventions
 
-- Every reusable workflow sets top-level `concurrency` (CI `cancel-in-progress: true`;
-  release `false`) and `timeout-minutes` per job. Preserve both when adding workflows.
+- `concurrency` goes ONLY on top-level workflows (callers). Reusable (`workflow_call`)
+  workflows must NOT declare `concurrency` — inside a reusable call `${{ github.workflow }}`
+  resolves to the caller's name, so the nested job joins the caller's group and GitHub
+  reports a "deadlock for concurrency group" and cancels everything. Reusable workflows keep
+  `timeout-minutes` per job; cancellation policy lives with the caller
+  (CI `cancel-in-progress: true`, release `false`).
 - Third-party actions are SHA-pinned by Renovate (`pinDigests: true`); keep first-party on `@v1`.
 - Tool installers live in the composite action `.github/actions/setup-platform-tools`
   (crossplane/helm/kubeconform/pluto). Canonical versions are in `.tool-versions` — keep the
