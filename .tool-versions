@@ -1,6 +1,6 @@
 # Canonical tool versions for the workflow library (asdf-compatible).
-# The composite action .github/actions/setup-platform-tools holds the effective
-# defaults; keep them in sync with this file. Renovate (or a human) bumps both.
+# Install steps are inline in the workflows that need them; keep those in sync
+# with this file. Renovate (or a human) bumps both.
 crossplane 2.3.2
 helm 4.1.4
 kubeconform 0.6.7
