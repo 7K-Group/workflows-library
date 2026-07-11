@@ -68,16 +68,11 @@ jobs:
         if: ${{ inputs.prebuild != '' }}
         run: ${{ inputs.prebuild }}
 
-      - name: Set up Helm
-        uses: azure/setup-helm@v5
+      - name: Install tools
+        uses: 7K-Group/workflows-library/.github/actions/setup-platform-tools@v1
         with:
-          version: v4.1.4
-
-      - name: Install Crossplane CLI
-        run: |
-          curl -fsSL "https://releases.crossplane.io/stable/${{ inputs.crossplane-version }}/bin/linux_amd64/crossplane" -o /usr/local/bin/crossplane
-          chmod +x /usr/local/bin/crossplane
-          crossplane version --client
+          crossplane-version: ${{ inputs.crossplane-version }}
+          helm-version: v4.1.4
 
       - name: Build xpkg
         run: |
