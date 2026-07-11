@@ -27,10 +27,6 @@ on:
         description: "PAT with contents:write + pull-requests:write. Falls back to GITHUB_TOKEN if unset (note: PRs from GITHUB_TOKEN do not trigger other workflows)."
         required: false
 
-concurrency:
-  group: '${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}'
-  cancel-in-progress: false
-
 jobs:
   release:
     runs-on: ubuntu-latest

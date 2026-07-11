@@ -12,10 +12,6 @@ on:
         default: "1.31.0"
         description: "Target Kubernetes version for kubeconform schema validation"
 
-concurrency:
-  group: "${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}"
-  cancel-in-progress: true
-
 jobs:
   lint:
     runs-on: ubuntu-latest
