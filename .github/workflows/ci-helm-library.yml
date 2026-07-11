@@ -13,10 +13,15 @@ on:
         default: "main"
         description: "Branch to diff against for ct lint's version-increment check."
 
+concurrency:
+  group: '${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}'
+  cancel-in-progress: true
+
 jobs:
   verify-library:
     name: Verify Chart.yaml type
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
 
@@ -31,6 +36,7 @@ jobs:
   lint:
     needs: verify-library
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
 
@@ -48,6 +54,7 @@ jobs:
   schema:
     needs: verify-library
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
 
@@ -64,6 +71,7 @@ jobs:
   chart-testing:
     needs: verify-library
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
         with:

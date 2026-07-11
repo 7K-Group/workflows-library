@@ -1,0 +1,71 @@
+name: "CI: Go Function"
+
+on:
+  workflow_call:
+    inputs:
+      path:
+        description: "Repo-relative path to the Go function module (where go.mod lives)."
+        required: true
+        type: string
+      go-version:
+        required: false
+        type: string
+        default: "1.24"
+      run-golangci:
+        description: "Run golangci-lint (requires a .golangci config for full value)."
+        required: false
+        type: boolean
+        default: false
+      run-govulncheck:
+        required: false
+        type: boolean
+        default: true
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: ${{ inputs.path }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.go-version }}
+          cache-dependency-path: ${{ inputs.path }}/go.sum
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test (race + coverage)
+        run: go test -race -coverprofile=coverage.out ./...
+
+      - name: govulncheck
+        if: ${{ inputs.run-govulncheck }}
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
+      - name: golangci-lint
+        if: ${{ inputs.run-golangci }}
+        uses: golangci/golangci-lint-action@v8
+        with:
+          working-directory: ${{ inputs.path }}
+          version: v2.1
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v5
+        with:
+          name: go-coverage
+          path: ${{ inputs.path }}/coverage.out
+          if-no-files-found: ignore
+          retention-days: 7

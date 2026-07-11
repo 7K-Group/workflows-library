@@ -1,38 +1,59 @@
 # Agent Notes
 
-This repo is a **GitHub Actions reusable-workflow library**, not an application. Consuming 7KGroup repos call these workflows via `uses: 7K-Group/workflows-library/.github/workflows/<file>.yml@v1`.
+This repo is a **GitHub Actions reusable-workflow library**, not an application. Consuming
+7KGroup repos call these workflows directly via
+`uses: 7K-Group/workflows-library/.github/workflows/<file>.yml@v1`.
+
+There is **no** top-level `ci.yml`/`release.yml` dispatcher — consumers call the per-stack
+files (`ci-<stack>.yml`, `release-<stack>.yml`) directly.
+
+## Workflows
+
+CI: `ci-app`, `ci-cdk8s`, `ci-go-function`, `ci-crossplane`, `ci-crossplane-e2e`,
+`ci-e2e-kind`, `ci-helm`, `ci-helm-library`, `ci-helm-docs`, `ci-docs`, `ci-kubeconform`,
+`ci-lint-pr-title`, `ci-secret-scan`.
+
+Release: `release-app`, `release-crossplane`, `release-function`, `release-helm`,
+`release-docs`, `release-please`. Promotion (re-tag by digest): `promote`.
+
+## Conventions
+
+- Every reusable workflow sets top-level `concurrency` (CI `cancel-in-progress: true`;
+  release `false`) and `timeout-minutes` per job. Preserve both when adding workflows.
+- Third-party actions are SHA-pinned by Renovate (`pinDigests: true`); keep first-party on `@v1`.
+- Tool installers live in the composite action `.github/actions/setup-platform-tools`
+  (crossplane/helm/kubeconform/pluto). Canonical versions are in `.tool-versions` — keep the
+  action's defaults in sync when bumping. Prefer the action over inline curl installs.
+- Release workflows publish to **Harbor** and require secrets `HARBOR_REGISTRY`,
+  `HARBOR_PROJECT`, `HARBOR_ROBOT_NAME`, `HARBOR_ROBOT_TOKEN` (consumers use `secrets: inherit`).
+- `release-app` / `release-function` take a **short** image name and build the full ref as
+  `${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${name}`. `ci-app` takes a **full** ref (CI tagging only).
+- All published artifacts are signed with **keyless cosign** (`id-token: write`) and get an
+  SPDX SBOM attestation where applicable.
+- Crossplane xpkgs: build with `crossplane xpkg build --package-root=<dir> -o <file>`;
+  Function xpkgs embed the runtime via `--embed-runtime-image=<image@digest>` (image must be in
+  the local Docker cache — `docker pull` first in CI). Push with
+  `crossplane xpkg push -f <file> <registry>/<repo>/<name>:<semver>` (tag must be semver).
+- cdk8s repos are npm-workspace monorepos; `ci-cdk8s` runs at the workspace root (`path: .`).
+- Helm charts require `values.schema.json`; library charts use `ci-helm-library`, not `ci-helm`.
 
 ## Local validation
 
-There is no local build, test, or package manager. Validate workflow edits with the same tools CI uses:
+No build/test/package manager. Validate with the same tools CI uses:
 
 ```bash
 pip install yamllint
 yamllint -d "{extends: default, rules: {line-length: {max: 200}, truthy: disable, document-start: disable}}" .github/workflows/
+# actionlint (run in CI via raven-actions/actionlint@v2)
 ```
 
-`actionlint` is also run in CI via `raven-actions/actionlint@v2`; install locally if you want a pre-push check.
+## Repo CI / release
 
-## Repo CI / release vs. consumer dispatchers
-
-- **This repo's CI**: `.github/workflows/library-ci.yml` runs on PRs (semantic PR title lint, yamllint, actionlint).
-- **This repo's release**: `.github/workflows/library-release.yml` runs on `main` (release-please, then force-updates the `v1` major tag).
-- **Consumer entry points**: The README refers to `ci.yml` / `release.yml`, but the actual reusable dispatchers consumed by apps are the per-stack files (`ci-<stack>.yml`, `release-<stack>.yml`). There is no top-level `ci.yml` or `release.yml` in this repo.
-
-## Workflow gotchas
-
-- `ci-app.yml` takes a full `image-name` (e.g. `ghcr.io/7kgroup/myapp`) only for tagging the local CI build. `release-app.yml` takes a **short** `image-name` (e.g. `my-app`) and constructs the full Harbor path from `HARBOR_REGISTRY`/`HARBOR_PROJECT` secrets.
-- `release-app.yml` pushes to **Harbor**, signs images with keyless cosign, and generates/attests an SPDX SBOM.
-- Helm CI (`ci-helm.yml`) requires `values.schema.json` at the chart root and supports an optional `.ci-api-versions` file for extra `--api-versions` flags during `helm template` and kubeconform.
-- `ci-helm-library.yml` is only for charts with `type: library` in `Chart.yaml`; use `ci-helm.yml` for application charts.
-- `ci-helm-docs.yml` auto-commits generated `README.md` changes. It skips if the last commit already starts with `chore: update helm-docs` to avoid loops.
-- `release-docs.yml` publishes TechDocs to S3 (`APPDOCS_S3_BUCKET`) and dispatches `docs-updated` to a configurable owner/repo (default `7K-Group/Hiroba`) via a GitHub App.
-- `release-crossplane.yml` currently only validates YAML; the xpkg push is stubbed out.
-
-## Versioning
-
-Releases are fully automated. Do not manually create tags. `release-please` (simple release type) produces tags like `v1.10.0`, then `library-release.yml` force-pushes the `v1` major tag. Consuming repos pin to `@v1`.
+- `library-ci.yml` (PRs): semantic PR-title lint + yamllint + actionlint.
+- `library-release.yml` (push to `main`): release-please (`simple`) → tag `vX.Y.Z` → force-update
+  the `v1` major tag. Consumers pin `@v1`. Never create tags manually.
 
 ## PR conventions
 
-PR titles must follow Conventional Commits. Allowed types are defined in `.github/workflows/ci-lint-pr-title.yml`: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
+Conventional Commits. Allowed types (`ci-lint-pr-title.yml`):
+`feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.

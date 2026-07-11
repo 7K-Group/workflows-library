@@ -1,0 +1,71 @@
+name: "CI: cdk8s"
+
+on:
+  workflow_call:
+    inputs:
+      path:
+        description: "Repo-relative path to the cdk8s workspace root (where package.json with workspaces lives)."
+        required: false
+        type: string
+        default: "."
+      node-version:
+        required: false
+        type: string
+        default: "20"
+      validate:
+        description: "Run per-workspace `npm run validate` (crossplane composition render) when present."
+        required: false
+        type: boolean
+        default: true
+      lint:
+        required: false
+        type: boolean
+        default: true
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: ${{ inputs.path }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+          cache-dependency-path: ${{ inputs.path }}/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        if: ${{ inputs.lint }}
+        run: npm run lint --if-present
+
+      - name: Build (tsc)
+        run: npm run build --if-present
+
+      - name: Unit tests
+        run: npm run test:unit --if-present
+
+      - name: Synth manifests
+        run: npm run synth --if-present
+
+      - name: Validate compositions (crossplane render)
+        if: ${{ inputs.validate }}
+        run: npm run validate --if-present
+
+      - name: Upload synthesized manifests
+        uses: actions/upload-artifact@v5
+        with:
+          name: cdk8s-dist
+          path: ${{ inputs.path }}/**/dist/*.k8s.yaml
+          if-no-files-found: ignore
+          retention-days: 7

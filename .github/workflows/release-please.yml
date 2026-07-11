@@ -1,0 +1,51 @@
+name: "Release Please"
+
+on:
+  workflow_call:
+    inputs:
+      config-file:
+        required: false
+        type: string
+        default: "release-please-config.json"
+      manifest-file:
+        required: false
+        type: string
+        default: ".release-please-manifest.json"
+      target-branch:
+        required: false
+        type: string
+        default: ""
+    outputs:
+      releases_created:
+        description: "JSON map of package path -> boolean release flag."
+        value: ${{ jobs.release.outputs.releases_created }}
+      paths_released:
+        description: "JSON array of package paths that were released."
+        value: ${{ jobs.release.outputs.paths_released }}
+    secrets:
+      RELEASE_PLEASE_TOKEN:
+        description: "PAT with contents:write + pull-requests:write. Falls back to GITHUB_TOKEN if unset (note: PRs from GITHUB_TOKEN do not trigger other workflows)."
+        required: false
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}'
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      releases_created: ${{ steps.rp.outputs.releases_created }}
+      paths_released: ${{ steps.rp.outputs.paths_released }}
+    steps:
+      - uses: googleapis/release-please-action@v5
+        id: rp
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          config-file: ${{ inputs.config-file }}
+          manifest-file: ${{ inputs.manifest-file }}
+          target-branch: ${{ inputs.target-branch }}

@@ -1,6 +1,16 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  // Pin every third-party GitHub Action to an immutable commit SHA. Renovate opens
+  // PRs that rewrite `uses: owner/action@vX` to `uses: owner/action@<sha> # vX` and
+  // keeps them current. Supply-chain baseline for a workflow library.
+  pinDigests: true,
   packageRules: [
+    {
+      matchDepTypes: ["action"],
+      groupName: "github actions",
+      pinDigests: true,
+      schedule: ["weekly"],
+    },
     {
       matchPackageNames: ["*"],
       groupName: "all dependencies",

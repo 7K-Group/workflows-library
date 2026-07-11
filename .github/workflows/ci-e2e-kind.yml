@@ -1,0 +1,62 @@
+name: "CI: cdk8s e2e (kind)"
+
+on:
+  workflow_call:
+    inputs:
+      path:
+        description: "Repo-relative path to the cdk8s workspace root."
+        required: false
+        type: string
+        default: "."
+      node-version:
+        required: false
+        type: string
+        default: "20"
+      cluster-name:
+        required: false
+        type: string
+        default: "platform-e2e"
+      setup-script:
+        description: "Optional setup script run after kind is up (e.g. scripts/e2e-setup.sh). Skipped if absent."
+        required: false
+        type: string
+        default: "scripts/e2e-setup.sh"
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: ${{ inputs.path }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+          cache-dependency-path: ${{ inputs.path }}/package-lock.json
+
+      - run: npm ci
+
+      - uses: helm/kind-action@v1
+        with:
+          cluster_name: ${{ inputs.cluster-name }}
+
+      - name: Run e2e setup
+        run: |
+          if [ -x "${{ inputs.setup-script }}" ]; then
+            "${{ inputs.setup-script }}"
+          elif [ -f "${{ inputs.setup-script }}" ]; then
+            bash "${{ inputs.setup-script }}"
+          else
+            echo "No setup script at ${{ inputs.setup-script }}; skipping."
+          fi
+
+      - name: Run e2e tests
+        run: npm run test:e2e --if-present

@@ -1,0 +1,70 @@
+name: "Promote image (re-tag by digest)"
+
+on:
+  workflow_call:
+    inputs:
+      image:
+        description: "Short image/package name. Full ref is ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${image}."
+        required: true
+        type: string
+      digest:
+        description: "Source manifest digest (sha256:...) to promote. Must already exist (built by a release-* workflow)."
+        required: true
+        type: string
+      tags:
+        description: "Comma-separated target tags to point at the digest (e.g. staging,prod,1.2.3)."
+        required: true
+        type: string
+      sign:
+        description: "Keyless-cosign sign the digest (signature covers every tag pointing at it)."
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      HARBOR_REGISTRY:
+        required: true
+      HARBOR_PROJECT:
+        required: true
+      HARBOR_ROBOT_NAME:
+        required: true
+      HARBOR_ROBOT_TOKEN:
+        required: true
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}"
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      IMAGE: ${{ secrets.HARBOR_REGISTRY }}/${{ secrets.HARBOR_PROJECT }}/${{ inputs.image }}
+    steps:
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ${{ secrets.HARBOR_REGISTRY }}
+          username: ${{ secrets.HARBOR_ROBOT_NAME }}
+          password: ${{ secrets.HARBOR_ROBOT_TOKEN }}
+
+      - name: Re-tag digest (no rebuild)
+        run: |
+          IFS=',' read -ra TAGS <<< "${{ inputs.tags }}"
+          for tag in "${TAGS[@]}"; do
+            tag="$(echo -n "$tag" | tr -d '[:space:]')"
+            [ -z "$tag" ] && continue
+            echo "Pointing $IMAGE:$tag at ${{ inputs.digest }}"
+            docker buildx imagetools create --tag "$IMAGE:$tag" "$IMAGE@${{ inputs.digest }}"
+          done
+
+      - uses: sigstore/cosign-installer@v4.1.2
+        if: ${{ inputs.sign }}
+
+      - name: Sign digest (keyless)
+        if: ${{ inputs.sign }}
+        run: cosign sign --yes "$IMAGE@${{ inputs.digest }}"

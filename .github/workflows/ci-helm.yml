@@ -12,9 +12,14 @@ on:
         default: "1.31.0"
         description: "Target Kubernetes version for kubeconform schema validation"
 
+concurrency:
+  group: "${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}"
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v6
 
@@ -31,6 +36,7 @@ jobs:
 
   template:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v6
 
@@ -64,6 +70,7 @@ jobs:
 
   unittest:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v6
 
@@ -84,6 +91,7 @@ jobs:
   test:
     needs: [lint, template, unittest]
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v6
 
@@ -115,6 +123,7 @@ jobs:
 
   kubeconform:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v6
 
@@ -126,17 +135,12 @@ jobs:
       - name: Update chart dependencies
         run: helm dependency update ${{ inputs.path }}
 
-      - name: Install kubeconform
-        run: |
-          KUBECONFORM_VERSION="v0.6.7"
-          curl -fsSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
-            | tar xz -C /usr/local/bin kubeconform
-
-      - name: Install pluto
-        run: |
-          PLUTO_VERSION="5.21.0"
-          curl -fsSL "https://github.com/FairwindsOps/pluto/releases/download/v${PLUTO_VERSION}/pluto_${PLUTO_VERSION}_linux_amd64.tar.gz" \
-            | tar xz -C /usr/local/bin pluto
+      - name: Install kubeconform + pluto
+        uses: ./.github/actions/setup-platform-tools
+        with:
+          crossplane-version: ""
+          kubeconform-version: v0.6.7
+          pluto-version: 5.21.0
 
       - name: Load chart-local API versions
         id: api-versions

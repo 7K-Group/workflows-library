@@ -10,7 +10,7 @@ on:
         required: true
         type: string
       image-name:
-        description: 'Short image name (e.g. my-app). Full path is built from HARBOR_REGISTRY/HARBOR_PROJECT secrets.'
+        description: "Short image name (e.g. my-app). Full path is built from HARBOR_REGISTRY/HARBOR_PROJECT secrets."
         required: true
         type: string
     secrets:
@@ -23,12 +23,18 @@ on:
       HARBOR_ROBOT_TOKEN:
         required: true
 
+concurrency:
+  group: "${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}"
+  cancel-in-progress: false
+
 jobs:
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
-      id-token: write  # keyless cosign signing via Sigstore OIDC
+      # keyless cosign signing via Sigstore OIDC
+      id-token: write
     outputs:
       digest: ${{ steps.build.outputs.digest }}
     env:

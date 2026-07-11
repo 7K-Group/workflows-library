@@ -1,38 +1,106 @@
-name: "CI: Crossplane"
+name: "CI: Crossplane Package"
 
 on:
   workflow_call:
     inputs:
       path:
+        description: "Repo-relative path to the Crossplane package directory (must contain crossplane.yaml)."
         required: true
         type: string
+      kubernetes-version:
+        required: false
+        type: string
+        default: "1.31.0"
+      crossplane-version:
+        required: false
+        type: string
+        default: "v2.3.2"
+      node-version:
+        required: false
+        type: string
+        default: "20"
+      prebuild:
+        description: "Optional shell command run at the repo root before building (e.g. aggregate cdk8s synth output into the package dir). Triggers npm ci."
+        required: false
+        type: string
+        default: ""
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}"
+  cancel-in-progress: true
 
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v6
 
-      - name: Validate YAML syntax
+      - uses: actions/setup-node@v4
+        if: ${{ inputs.prebuild != '' }}
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+
+      - name: Install JS deps
+        if: ${{ inputs.prebuild != '' }}
+        run: npm ci
+
+      - name: Prepare package
+        if: ${{ inputs.prebuild != '' }}
+        run: ${{ inputs.prebuild }}
+
+      - name: Install Crossplane CLI
+        uses: ./.github/actions/setup-platform-tools
+        with:
+          crossplane-version: ${{ inputs.crossplane-version }}
+
+      - name: Lint YAML
+        run: |
+          pip install yamllint
+          yamllint -d "{extends: default, rules: {line-length: {max: 200}, truthy: disable, document-start: disable}}" ${{ inputs.path }}
+
+      - name: Validate crossplane.yaml
         run: |
           pip install pyyaml
-          for file in ${{ inputs.path }}/*.yaml; do
-            if [ -f "$file" ]; then
-              echo "Validating $file..."
-              python3 -c "import yaml; yaml.safe_load(open('$file'))"
-            fi
-          done
+          python3 - <<'PY'
+          import os, yaml
+          root = "${{ inputs.path }}"
+          d = yaml.safe_load(open(os.path.join(root, "crossplane.yaml")))
+          assert d.get("apiVersion", "").startswith("meta.pkg.crossplane.io/"), f"bad apiVersion: {d.get('apiVersion')}"
+          assert d.get("kind") in {"Configuration", "Function", "Provider"}, f"unexpected kind: {d.get('kind')}"
+          assert d.get("metadata", {}).get("name"), "metadata.name is required"
+          for dep in (d.get("spec") or {}).get("dependsOn") or []:
+              ref = dep.get("function") or dep.get("provider") or dep.get("configuration") or ""
+              if "function-platform" in ref and "upbound.io" in ref:
+                  raise SystemExit(f"placeholder dependsOn must point at the real registry ref, got: {ref}")
+          print("crossplane.yaml OK:", d["kind"], d["metadata"]["name"])
+          PY
 
-      - name: Setup kubectl
-        uses: yokawasa/action-setup-kube-tools@v0.13.5
-        with:
-          kubectl: '1.29.0'
-
-      - name: Dry-run validate
+      - name: Build package (validates structure)
         run: |
-          for file in ${{ inputs.path }}/*.yaml; do
-            if [ -f "$file" ]; then
-              echo "Validating $file..."
-              kubectl apply --dry-run=client -f "$file" 2>&1 || true
-            fi
-          done
+          mkdir -p /tmp/_empty_examples
+          crossplane xpkg build --package-root=${{ inputs.path }} -e /tmp/_empty_examples -o /tmp/package.xpkg
+
+      - name: Install kubeconform + pluto
+        uses: ./.github/actions/setup-platform-tools
+        with:
+          crossplane-version: ""
+          kubeconform-version: v0.6.7
+          pluto-version: 5.21.0
+
+      - name: Schema-validate manifests
+        run: |
+          kubeconform \
+            -strict \
+            -ignore-missing-schemas \
+            -kubernetes-version "${{ inputs.kubernetes-version }}" \
+            -schema-location default \
+            -schema-location 'https://raw.githubusercontent.com/datree/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+            -summary \
+            $(find ${{ inputs.path }} -name '*.yaml' -not -name 'crossplane.yaml')
+
+      - name: Detect deprecated APIs
+        run: |
+          mapfile -t files < <(find ${{ inputs.path }} -name '*.yaml' -not -name 'crossplane.yaml')
+          pluto detect-files "${files[@]}"

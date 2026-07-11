@@ -1,0 +1,18 @@
+# Reference policy (Sigstore Policy Controller). NOT applied automatically — copy into
+# a cluster's GitOps repo and substitute <HARBOR_REGISTRY> / <HARBOR_PROJECT>.
+# Requires every 7KGroup platform artifact to carry a keyless cosign signature produced
+# by this library's release workflows before it can run.
+apiVersion: policy.sigstore.dev/v1beta1
+kind: ClusterImagePolicy
+metadata:
+  name: require-7kgroup-platform-signed
+spec:
+  images:
+    - glob: "<HARBOR_REGISTRY>/<HARBOR_PROJECT>/function-platform*"
+    - glob: "<HARBOR_REGISTRY>/<HARBOR_PROJECT>/platform-*"
+  authorities:
+    - keyless:
+        url: https://fulcio.sigstore.dev
+        identities:
+          - issuer: https://token.actions.githubusercontent.com
+            subjectRegExp: '^https://github\.com/7K-Group/workflows-library/\.github/workflows/release-(crossplane|function|app)\.yml@.*$'
