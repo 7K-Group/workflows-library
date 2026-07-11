@@ -25,9 +25,11 @@ Release: `release-app`, `release-crossplane`, `release-function`, `release-helm`
   `timeout-minutes` per job; cancellation policy lives with the caller
   (CI `cancel-in-progress: true`, release `false`).
 - Third-party actions are SHA-pinned by Renovate (`pinDigests: true`); keep first-party on `@v1`.
-- Tool installers live in the composite action `.github/actions/setup-platform-tools`
-  (crossplane/helm/kubeconform/pluto). Canonical versions are in `.tool-versions` — keep the
-  action's defaults in sync when bumping. Prefer the action over inline curl installs.
+- Tool installers are inline steps in each workflow that needs them (crossplane CLI via
+  `releases.crossplane.io`, Helm via `azure/setup-helm`, kubeconform/pluto via release
+  tarballs). Canonical versions are in `.tool-versions` — keep the inline versions in sync
+  when bumping. Do NOT use local composite actions (`uses: ./...`): relative paths resolve
+  against the *calling* repo's checkout, so consumers would have to vendor a copy.
 - Release workflows publish to **Harbor** and require secrets `HARBOR_REGISTRY`,
   `HARBOR_PROJECT`, `HARBOR_ROBOT_NAME`, `HARBOR_ROBOT_TOKEN` (consumers use `secrets: inherit`).
 - `release-app` / `release-function` take a **short** image name and build the full ref as
@@ -36,8 +38,7 @@ Release: `release-app`, `release-crossplane`, `release-function`, `release-helm`
   SPDX SBOM attestation where applicable.
 - Crossplane xpkgs: build with `crossplane xpkg build --package-root=<dir> -o <file>`;
   Function xpkgs embed the runtime via `--embed-runtime-image=<image@digest>` (image must be in
-  the local Docker cache — `docker pull` first in CI). Push with
-  `crossplane xpkg push -f <file> <registry>/<repo>/<name>:<semver>` (tag must be semver).
+  the local Docker cache — `docker pull` first in CI). Push with `crossplane xpkg push -f <file> <registry>/<repo>/<name>:<semver>` (tag must be semver).
 - cdk8s repos are npm-workspace monorepos; `ci-cdk8s` runs at the workspace root (`path: .`).
 - Helm charts require `values.schema.json`; library charts use `ci-helm-library`, not `ci-helm`.
 

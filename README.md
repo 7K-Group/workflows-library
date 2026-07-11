@@ -30,7 +30,7 @@ to the latest `v1.x.x` on every release.
 | `ci-helm-docs.yml`      | regenerate + auto-commit chart README from `README.md.gotmpl`                                | —                                                                                     |
 | `ci-docs.yml`           | markdown lint                                                                                | `path`                                                                                |
 | `ci-kubeconform.yml`    | kubeconform + pluto on raw manifests                                                         | `path`                                                                                |
-| `ci-lint-pr-title.yml`  | Conventional-Commit PR title lint                                                            | —                                                     | —                                                                                     |
+| `ci-lint-pr-title.yml`  | Conventional-Commit PR title lint                                                            | —                                                                                     | —                                                                                     |
 | `ci-crossplane-e2e.yml` | build xpkg → install into ephemeral kind via local registry → assert XRDs `Established`      | `path`, `image`, `prebuild`, `crossplane-version`, `kube-version`                     |
 
 Helm charts require `values.schema.json`; add `.ci-api-versions` for custom CRDs.
@@ -119,9 +119,10 @@ jobs:
 
 ## Toolchain
 
-Tool installers are centralized in the composite action
-`.github/actions/setup-platform-tools` (crossplane / helm / kubeconform / pluto). Canonical
-versions live in `.tool-versions`; keep the action's defaults in sync when bumping.
+Tool installers are inline steps in the workflows that need them (crossplane CLI via
+`releases.crossplane.io`, Helm via `azure/setup-helm`, kubeconform/pluto via pinned release
+tarballs). Canonical versions live in `.tool-versions`; keep the inline versions in sync
+when bumping.
 
 ## Versioning
 
