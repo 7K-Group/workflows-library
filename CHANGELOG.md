@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/7K-Group/workflows-library/compare/v1.1.0...v1.1.1) (2026-07-11)
+
+
+### Bug Fixes
+
+* move concurrency to top level workflows only ([0370aaf](https://github.com/7K-Group/workflows-library/commit/0370aaf2e45f47365bff9e6221a18eddf3666fdd))
+
 ## [1.1.0](https://github.com/7K-Group/workflows-library/compare/v1.0.0...v1.1.0) (2026-06-16)
 
 
