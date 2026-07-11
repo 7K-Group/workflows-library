@@ -25,11 +25,12 @@ Release: `release-app`, `release-crossplane`, `release-function`, `release-helm`
   `timeout-minutes` per job; cancellation policy lives with the caller
   (CI `cancel-in-progress: true`, release `false`).
 - Third-party actions are SHA-pinned by Renovate (`pinDigests: true`); keep first-party on `@v1`.
-- Tool installers are inline steps in each workflow that needs them (crossplane CLI via
-  `releases.crossplane.io`, Helm via `azure/setup-helm`, kubeconform/pluto via release
-  tarballs). Canonical versions are in `.tool-versions` — keep the inline versions in sync
-  when bumping. Do NOT use local composite actions (`uses: ./...`): relative paths resolve
-  against the *calling* repo's checkout, so consumers would have to vendor a copy.
+- Tool installers live in the composite action `.github/actions/setup-platform-tools`
+  (crossplane/helm/kubeconform/pluto). Reference it ONLY via the fully-qualified form
+  `7K-Group/workflows-library/.github/actions/setup-platform-tools@v1` — a relative `uses: ./...`
+  path resolves against the *calling* repo's checkout and breaks consumers. Canonical versions
+  are in `.tool-versions` — keep the action's defaults in sync when bumping. This requires the
+  repo to stay public: composite actions in private repos cannot be consumed cross-repo.
 - Release workflows publish to **Harbor** and require secrets `HARBOR_REGISTRY`,
   `HARBOR_PROJECT`, `HARBOR_ROBOT_NAME`, `HARBOR_ROBOT_TOKEN` (consumers use `secrets: inherit`).
 - `release-app` / `release-function` take a **short** image name and build the full ref as

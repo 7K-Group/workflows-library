@@ -119,10 +119,13 @@ jobs:
 
 ## Toolchain
 
-Tool installers are inline steps in the workflows that need them (crossplane CLI via
-`releases.crossplane.io`, Helm via `azure/setup-helm`, kubeconform/pluto via pinned release
-tarballs). Canonical versions live in `.tool-versions`; keep the inline versions in sync
-when bumping.
+Tool installers are centralized in the composite action
+`.github/actions/setup-platform-tools` (crossplane / helm / kubeconform / pluto). Workflows
+reference it via the fully-qualified form
+`7K-Group/workflows-library/.github/actions/setup-platform-tools@v1` — never the relative
+`./...` form, which resolves against the *calling* repo's checkout and would force consumers
+to vendor a copy. Canonical versions live in `.tool-versions`; keep the action's defaults in
+sync when bumping.
 
 ## Versioning
 
