@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.0](https://github.com/7K-Group/workflows-library/compare/v1.1.1...v1.2.0) (2026-07-11)
+
+
+### Features
+
+* add tests and fix issues ([3d34cee](https://github.com/7K-Group/workflows-library/commit/3d34ceecaaa0d8fd92a78e765f7eb54f0b0c4d08))
+* remove git leaks workflow ([358aa4f](https://github.com/7K-Group/workflows-library/commit/358aa4f8e75f4bad61699a59d6bceb0d9d177c99))
+
+
+### Bug Fixes
+
+* add gitleaks license map for organizations ([389ad94](https://github.com/7K-Group/workflows-library/commit/389ad94d8ccd35d32c5e91bd0c1da3869741193d))
+* fix crossplane version command ([3591310](https://github.com/7K-Group/workflows-library/commit/3591310ca87a69a3139f2e57b5399208a099737a))
+
 ## [1.1.1](https://github.com/7K-Group/workflows-library/compare/v1.1.0...v1.1.1) (2026-07-11)
 
 
