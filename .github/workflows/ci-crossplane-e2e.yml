@@ -69,7 +69,7 @@ jobs:
         run: ${{ inputs.prebuild }}
 
       - name: Install tools
-        uses: ./.github/actions/setup-platform-tools
+        uses: 7K-Group/workflows-library/.github/actions/setup-platform-tools@v1
         with:
           crossplane-version: ${{ inputs.crossplane-version }}
           helm-version: v4.1.4
