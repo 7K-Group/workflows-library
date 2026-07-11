@@ -8,6 +8,12 @@ name: "CI: Crossplane Package e2e (kind)"
 #
 # Runs in GitHub-hosted runners (needs docker + kind). Promote to a required check
 # only after the first successful run in CI.
+#
+# Registry addressing: Crossplane's package manager fetches the xpkg OCI manifest
+# itself from inside the crossplane pod, so the package reference must resolve via
+# cluster DNS (CoreDNS) — a containerd mirror or docker-network hostname does NOT
+# work. We therefore reference the registry by its IP on the kind docker network,
+# which pod traffic reaches via the node without any DNS lookup.
 
 on:
   workflow_call:
@@ -49,7 +55,6 @@ jobs:
     timeout-minutes: 45
     env:
       REG_PORT: "5000"
-      LOCAL_IMAGE: registry.local:5000/${{ inputs.image }}:ci
       PUSH_IMAGE: localhost:5000/${{ inputs.image }}:ci
     steps:
       - uses: actions/checkout@v6
@@ -84,7 +89,7 @@ jobs:
         run: |
           docker run -d --restart=always -p 127.0.0.1:${REG_PORT}:5000 --name registry registry:2
 
-      - name: Write kind config (registry mirror)
+      - name: Write kind config
         run: |
           cat > /tmp/kind-config.yaml <<EOF
           kind: Cluster
@@ -92,10 +97,6 @@ jobs:
           nodes:
             - role: control-plane
               image: kindest/node:${{ inputs.kube-version }}
-          containerdConfigPatches:
-            - |-
-              [plugins."io.containerd.grpc.v1.cri".registry.mirrors."registry.local:5000"]
-                endpoint = ["http://registry:5000"]
           EOF
 
       - name: Create kind cluster
@@ -105,7 +106,11 @@ jobs:
           config: /tmp/kind-config.yaml
 
       - name: Connect registry to kind network
-        run: docker network connect kind registry || true
+        run: |
+          docker network connect kind registry || true
+          REG_IP=$(docker inspect -f '{{.NetworkSettings.Networks.kind.IPAddress}}' registry)
+          echo "Registry kind-network IP: $REG_IP"
+          echo "REG_IP=$REG_IP" >> "$GITHUB_ENV"
 
       - name: Document local registry for cluster
         run: |
@@ -115,7 +120,7 @@ jobs:
           metadata: { name: local-registry-hosting, namespace: kube-public }
           data:
             localRegistryHosting.v1: |
-              host: "registry:5000"
+              host: "${REG_IP}:5000"
           EOF
 
       - name: Push xpkg to local registry
@@ -136,7 +141,7 @@ jobs:
           kind: Configuration
           metadata: { name: ${{ inputs.image }} }
           spec:
-            package: "$LOCAL_IMAGE"
+            package: "${REG_IP}:${REG_PORT}/${{ inputs.image }}:ci"
             packagePullPolicy: Always
           EOF
 
