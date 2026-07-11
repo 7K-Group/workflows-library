@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.2](https://github.com/7K-Group/workflows-library/compare/v1.2.1...v1.2.2) (2026-07-11)
+
+
+### Bug Fixes
+
+* **ci-crossplane-e2e:** reference local registry by kind-network IP ([8650c03](https://github.com/7K-Group/workflows-library/commit/8650c0307f5175b1757560c92aab09bd978399e4))
+* **ci-crossplane-e2e:** reference local registry by kind-network IP ([105488a](https://github.com/7K-Group/workflows-library/commit/105488a85c44025021d4dda7b2fcedb52edf6888))
+
 ## [1.2.1](https://github.com/7K-Group/workflows-library/compare/v1.2.0...v1.2.1) (2026-07-11)
 
 
