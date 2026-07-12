@@ -119,29 +119,6 @@ jobs:
         if: ${{ !inputs.dry-run }}
         run: crossplane xpkg push -f /tmp/package.xpkg "$IMAGE:$VERSION"
 
-      - name: Wait for Harbor vulnerability scan
-        if: ${{ !inputs.dry-run }}
-        env:
-          REGISTRY: ${{ secrets.HARBOR_REGISTRY }}
-          PROJECT: ${{ secrets.HARBOR_PROJECT }}
-          ROBOT: ${{ secrets.HARBOR_ROBOT_NAME }}
-          TOKEN: ${{ secrets.HARBOR_ROBOT_TOKEN }}
-        run: |
-          # Projects with "prevent vulnerable images from running" return 412 on
-          # reads until the push-triggered scan completes; wait before resolving
-          # the digest and signing.
-          for i in $(seq 1 30); do
-            status=$(curl -sfu "$ROBOT:$TOKEN" \
-              "https://$REGISTRY/api/v2.0/projects/$PROJECT/repositories/${{ inputs.image }}/artifacts/$VERSION?with_scan_overview=true" \
-              | jq -r '(.scan_overview // {}) | to_entries[0].value.scan_status // "Unknown"') || status="Unknown"
-            echo "scan status ($i/30): $status"
-            [ "$status" = "Success" ] && exit 0
-            [ "$status" = "Error" ] && { echo "::error::Harbor scan failed"; exit 1; }
-            sleep 10
-          done
-          echo "::error::Harbor scan did not complete within 5 minutes"
-          exit 1
-
       - name: Resolve digest
         if: ${{ !inputs.dry-run }}
         id: digest
