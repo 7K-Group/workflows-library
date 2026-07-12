@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.6](https://github.com/7K-Group/workflows-library/compare/v1.2.5...v1.2.6) (2026-07-12)
+
+
+### Bug Fixes
+
+* **release-function:** exclude attestation manifests from scan wait ([#22](https://github.com/7K-Group/workflows-library/issues/22)) ([fabaef9](https://github.com/7K-Group/workflows-library/commit/fabaef913aa7f81edeb10e269ba0ae6a896518ac))
+
 ## [1.2.5](https://github.com/7K-Group/workflows-library/compare/v1.2.4...v1.2.5) (2026-07-12)
 
 
