@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.4](https://github.com/7K-Group/workflows-library/compare/v1.2.3...v1.2.4) (2026-07-12)
+
+
+### Bug Fixes
+
+* **release-function:** disable auto latest tag; create it post-scan ([#17](https://github.com/7K-Group/workflows-library/issues/17)) ([3678756](https://github.com/7K-Group/workflows-library/commit/3678756e932d7c853fbedc8858d5e91ed5d80b0d))
+
 ## [1.2.3](https://github.com/7K-Group/workflows-library/compare/v1.2.2...v1.2.3) (2026-07-12)
 
 
