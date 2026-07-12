@@ -94,6 +94,10 @@ jobs:
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302  # v6
         with:
           images: ${{ env.IMAGE }}
+          # latest=auto would add :latest to the initial push; it must wait for
+          # the scan like the other aliases, so disable and tag it post-scan.
+          flavor: |
+            latest=false
           tags: |
             type=semver,pattern={{version}},value=${{ inputs.version }}
 
@@ -142,7 +146,7 @@ jobs:
           MAJOR_MINOR="${VERSION%.*}"
           MAJOR="${VERSION%%.*}"
           docker buildx imagetools create \
-            -t "$IMAGE:$MAJOR_MINOR" -t "$IMAGE:$MAJOR" \
+            -t "$IMAGE:$MAJOR_MINOR" -t "$IMAGE:$MAJOR" -t "$IMAGE:latest" \
             "$IMAGE@$DIGEST"
 
       - name: Sign runtime image (keyless)
