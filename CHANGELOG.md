@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.3](https://github.com/7K-Group/workflows-library/compare/v1.2.2...v1.2.3) (2026-07-12)
+
+
+### Bug Fixes
+
+* **release:** wait for Harbor vulnerability scan before reads/alias tags ([#15](https://github.com/7K-Group/workflows-library/issues/15)) ([82201cf](https://github.com/7K-Group/workflows-library/commit/82201cf43d6365fe4d063f6fd58dd6e5dd0c0959))
+
 ## [1.2.2](https://github.com/7K-Group/workflows-library/compare/v1.2.1...v1.2.2) (2026-07-11)
 
 
