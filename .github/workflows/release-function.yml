@@ -112,8 +112,11 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          sbom: ${{ !inputs.dry-run }}
-          provenance: ${{ !inputs.dry-run }}
+          # buildkit sbom/provenance attestations add an unscannable child
+          # manifest that Harbor's "prevent vulnerable images" policy 412s
+          # forever; the anchore SBOM + cosign attest steps below cover this.
+          sbom: false
+          provenance: false
 
       # Projects with "prevent vulnerable images from running" + scan-on-push return
       # 412 on reads until the scan completes; wait before tagging aliases or signing.
