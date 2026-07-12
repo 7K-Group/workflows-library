@@ -126,12 +126,13 @@ jobs:
           TOKEN: ${{ secrets.HARBOR_ROBOT_TOKEN }}
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
-          # Harbor scans the image index AND each child manifest (per-platform
-          # images, attestations) separately; reads on any of them 412 until
-          # its own scan completes.
+          # Harbor scans the image index AND each per-platform child manifest
+          # separately; reads on any of them 412 until its own scan completes.
+          # Attestation manifests (platform unknown/unknown, added by buildkit
+          # sbom/provenance) are never scanned, so exclude them from the wait.
           CHILDREN=$(curl -sfu "$ROBOT:$TOKEN" \
             "https://$REGISTRY/api/v2.0/projects/$PROJECT/repositories/${{ inputs.image-name }}/artifacts/$DIGEST" \
-            | jq -r '.references[]?.child_digest') || CHILDREN=""
+            | jq -r '.references[]? | select(.platform.architecture != "unknown" or .platform.os != "unknown") | .child_digest') || CHILDREN=""
           for d in $DIGEST $CHILDREN; do
             for i in $(seq 1 30); do
               status=$(curl -sfu "$ROBOT:$TOKEN" \
