@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.5](https://github.com/7K-Group/workflows-library/compare/v1.2.4...v1.2.5) (2026-07-12)
+
+
+### Bug Fixes
+
+* **release-function:** wait for child-manifest scans, not just the index ([#20](https://github.com/7K-Group/workflows-library/issues/20)) ([c742797](https://github.com/7K-Group/workflows-library/commit/c74279796b8015bd6a118733f5ba3dc156061810))
+
 ## [1.2.4](https://github.com/7K-Group/workflows-library/compare/v1.2.3...v1.2.4) (2026-07-12)
 
 
