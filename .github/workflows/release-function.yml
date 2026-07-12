@@ -1,1 +1,256 @@
-$(cat /tmp/opencode/rf2.yml)
+name: "Release: Crossplane Function"
+
+on:
+  workflow_call:
+    inputs:
+      path:
+        description: "Repo-relative path to the Go function module (Docker build context)."
+        required: true
+        type: string
+      package-path:
+        description: "Repo-relative path to the Function package dir containing crossplane.yaml (kind: Function)."
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      image-name:
+        description: "Short runtime image name (e.g. function-platform)."
+        required: true
+        type: string
+      function-name:
+        description: "Short Function xpkg name (e.g. function-platform). Full ref is ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${function-name}."
+        required: true
+        type: string
+      go-version:
+        required: false
+        type: string
+        default: "1.24"
+      crossplane-version:
+        required: false
+        type: string
+        default: "v2.3.2"
+      dry-run:
+        description: "Build the runtime image and Function xpkg locally without pushing, signing or attesting. Harbor secrets are not required in dry-run mode."
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      HARBOR_REGISTRY:
+        required: false
+      HARBOR_PROJECT:
+        required: false
+      HARBOR_ROBOT_NAME:
+        required: false
+      HARBOR_ROBOT_TOKEN:
+        required: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      function-digest: ${{ steps.function-digest.outputs.digest }}
+    env:
+      IMAGE: ${{ secrets.HARBOR_REGISTRY != '' && format('{0}/{1}/{2}', secrets.HARBOR_REGISTRY, secrets.HARBOR_PROJECT, inputs.image-name) || inputs.image-name }}
+      FUNCTION_IMAGE: ${{ secrets.HARBOR_REGISTRY != '' && format('{0}/{1}/{2}', secrets.HARBOR_REGISTRY, secrets.HARBOR_PROJECT, inputs.function-name) || inputs.function-name }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6
+
+      - name: Validate Harbor secrets
+        if: ${{ !inputs.dry-run }}
+        env:
+          HARBOR_REGISTRY: ${{ secrets.HARBOR_REGISTRY }}
+          HARBOR_PROJECT: ${{ secrets.HARBOR_PROJECT }}
+          HARBOR_ROBOT_NAME: ${{ secrets.HARBOR_ROBOT_NAME }}
+          HARBOR_ROBOT_TOKEN: ${{ secrets.HARBOR_ROBOT_TOKEN }}
+        run: |
+          for v in HARBOR_REGISTRY HARBOR_PROJECT HARBOR_ROBOT_NAME HARBOR_ROBOT_TOKEN; do
+            if [ -z "${!v}" ]; then
+              echo "::error::Missing required secret: $v (or run with dry-run: true)"
+              exit 1
+            fi
+          done
+
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c  # v4
+
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6  # v4.1.2
+        if: ${{ !inputs.dry-run }}
+
+      - uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0  # v4
+        if: ${{ !inputs.dry-run }}
+        with:
+          registry: ${{ secrets.HARBOR_REGISTRY }}
+          username: ${{ secrets.HARBOR_ROBOT_NAME }}
+          password: ${{ secrets.HARBOR_ROBOT_TOKEN }}
+
+      - name: Runtime image metadata
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302  # v6
+        with:
+          images: ${{ env.IMAGE }}
+          # latest=auto would add :latest to the initial push; it must wait for
+          # the scan like the other aliases, so disable and tag it post-scan.
+          flavor: |
+            latest=false
+          tags: |
+            type=semver,pattern={{version}},value=${{ inputs.version }}
+
+      - name: Build + push runtime image
+        id: build
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a  # v7
+        with:
+          context: ${{ inputs.path }}
+          push: ${{ !inputs.dry-run }}
+          load: ${{ inputs.dry-run }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          sbom: ${{ !inputs.dry-run }}
+          provenance: ${{ !inputs.dry-run }}
+
+      # Projects with "prevent vulnerable images from running" + scan-on-push return
+      # 412 on reads until the scan completes; wait before tagging aliases or signing.
+      - name: Wait for Harbor vulnerability scan
+        if: ${{ !inputs.dry-run }}
+        env:
+          REGISTRY: ${{ secrets.HARBOR_REGISTRY }}
+          PROJECT: ${{ secrets.HARBOR_PROJECT }}
+          ROBOT: ${{ secrets.HARBOR_ROBOT_NAME }}
+          TOKEN: ${{ secrets.HARBOR_ROBOT_TOKEN }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          # Harbor scans the image index AND each per-platform child manifest
+          # separately; reads on any of them 412 until its own scan completes.
+          # Attestation manifests (platform unknown/unknown, added by buildkit
+          # sbom/provenance) are never scanned, so exclude them from the wait.
+          CHILDREN=$(curl -sfu "$ROBOT:$TOKEN" \
+            "https://$REGISTRY/api/v2.0/projects/$PROJECT/repositories/${{ inputs.image-name }}/artifacts/$DIGEST" \
+            | jq -r '.references[]? | select(.platform.architecture != "unknown" or .platform.os != "unknown") | .child_digest') || CHILDREN=""
+          for d in $DIGEST $CHILDREN; do
+            for i in $(seq 1 30); do
+              status=$(curl -sfu "$ROBOT:$TOKEN" \
+                "https://$REGISTRY/api/v2.0/projects/$PROJECT/repositories/${{ inputs.image-name }}/artifacts/$d?with_scan_overview=true" \
+                | jq -r '(.scan_overview // {}) | to_entries[0].value.scan_status // "Unknown"') || status="Unknown"
+              echo "scan $d ($i/30): $status"
+              [ "$status" = "Success" ] && break
+              [ "$status" = "Error" ] && { echo "::error::Harbor scan failed"; exit 1; }
+              [ "$i" = "30" ] && { echo "::error::Harbor scan did not complete within 5 minutes"; exit 1; }
+              sleep 10
+            done
+          done
+
+      - name: Tag major/minor aliases
+        if: ${{ !inputs.dry-run }}
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          MAJOR_MINOR="${VERSION%.*}"
+          MAJOR="${VERSION%%.*}"
+          docker buildx imagetools create \
+            -t "$IMAGE:$MAJOR_MINOR" -t "$IMAGE:$MAJOR" -t "$IMAGE:latest" \
+            "$IMAGE@$DIGEST"
+
+      - name: Sign runtime image (keyless)
+        if: ${{ !inputs.dry-run }}
+        run: cosign sign --yes "$IMAGE@${{ steps.build.outputs.digest }}"
+
+      - name: Generate runtime SBOM
+        if: ${{ !inputs.dry-run }}
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610  # v0
+        with:
+          image: ${{ env.IMAGE }}@${{ steps.build.outputs.digest }}
+          format: spdx-json
+          output-file: sbom-image.spdx.json
+
+      - name: Attest runtime SBOM
+        if: ${{ !inputs.dry-run }}
+        run: cosign attest --yes --type spdxjson --predicate sbom-image.spdx.json "$IMAGE@${{ steps.build.outputs.digest }}"
+
+      - name: Verify runtime signature + SBOM attestation
+        if: ${{ !inputs.dry-run }}
+        run: |
+          cosign verify \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp '^https://github\.com/7K-Group/workflows-library/\.github/workflows/release-function\.yml@.*$' \
+            "$IMAGE@${{ steps.build.outputs.digest }}"
+          cosign verify-attestation --type spdxjson \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp '^https://github\.com/7K-Group/workflows-library/\.github/workflows/release-function\.yml@.*$' \
+            "$IMAGE@${{ steps.build.outputs.digest }}"
+
+      - name: Pull runtime image for embed
+        if: ${{ !inputs.dry-run }}
+        run: docker pull "$IMAGE@${{ steps.build.outputs.digest }}"
+
+      - name: Install Crossplane CLI
+        uses: 7K-Group/workflows-library/.github/actions/setup-platform-tools@v1
+        with:
+          crossplane-version: ${{ inputs.crossplane-version }}
+          helm-version: ""
+          kubeconform-version: ""
+          pluto-version: ""
+
+      - name: Build Function xpkg (embeds runtime)
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          DRY_RUN: ${{ inputs.dry-run }}
+        run: |
+          # In dry-run the image was loaded into the local Docker cache by tag,
+          # so reference it by tag instead of registry digest.
+          if [ "$DRY_RUN" = "true" ]; then
+            EMBED_REF="$IMAGE:$VERSION"
+          else
+            EMBED_REF="$IMAGE@$DIGEST"
+          fi
+          crossplane xpkg build \
+            --package-root=${{ inputs.package-path }} \
+            --embed-runtime-image="$EMBED_REF" \
+            -o /tmp/function.xpkg
+
+      - name: Push Function xpkg
+        if: ${{ !inputs.dry-run }}
+        run: crossplane xpkg push -f /tmp/function.xpkg "$FUNCTION_IMAGE:$VERSION"
+
+      - name: Wait for Harbor scan of Function xpkg
+        if: ${{ !inputs.dry-run }}
+        env:
+          REGISTRY: ${{ secrets.HARBOR_REGISTRY }}
+          PROJECT: ${{ secrets.HARBOR_PROJECT }}
+          ROBOT: ${{ secrets.HARBOR_ROBOT_NAME }}
+          TOKEN: ${{ secrets.HARBOR_ROBOT_TOKEN }}
+        run: |
+          for i in $(seq 1 30); do
+            status=$(curl -sfu "$ROBOT:$TOKEN" \
+              "https://$REGISTRY/api/v2.0/projects/$PROJECT/repositories/${{ inputs.function-name }}/artifacts/$VERSION?with_scan_overview=true" \
+              | jq -r '(.scan_overview // {}) | to_entries[0].value.scan_status // "Unknown"') || status="Unknown"
+            echo "scan status ($i/30): $status"
+            [ "$status" = "Success" ] && exit 0
+            [ "$status" = "Error" ] && { echo "::error::Harbor scan failed"; exit 1; }
+            sleep 10
+          done
+          echo "::error::Harbor scan did not complete within 5 minutes"
+          exit 1
+
+      - name: Resolve Function xpkg digest
+        if: ${{ !inputs.dry-run }}
+        id: function-digest
+        run: echo "digest=$(docker buildx imagetools inspect "$FUNCTION_IMAGE:$VERSION" --format '{{.Manifest.Digest}}')" >> "$GITHUB_OUTPUT"
+
+      - name: Sign Function xpkg (keyless)
+        if: ${{ !inputs.dry-run }}
+        run: cosign sign --yes "$FUNCTION_IMAGE@${{ steps.function-digest.outputs.digest }}"
+
+      - name: Verify Function xpkg signature
+        if: ${{ !inputs.dry-run }}
+        run: |
+          cosign verify \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp '^https://github\.com/7K-Group/workflows-library/\.github/workflows/release-function\.yml@.*$' \
+            "$FUNCTION_IMAGE@${{ steps.function-digest.outputs.digest }}"
