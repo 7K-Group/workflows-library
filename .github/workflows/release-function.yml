@@ -94,7 +94,8 @@ jobs:
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302  # v6
         with:
           images: ${{ env.IMAGE }}
-          # latest is tagged post-push together with the major/minor aliases.
+          # latest is tagged on the Function xpkg (not the runtime image) post-push,
+          # together with the major/minor aliases.
           flavor: |
             latest=false
           tags: |
@@ -114,16 +115,29 @@ jobs:
           sbom: ${{ !inputs.dry-run }}
           provenance: ${{ !inputs.dry-run }}
 
-      - name: Tag major/minor aliases
+      # With buildkit sbom/provenance attestations enabled, steps.build.outputs.digest is
+      # an OCI *index* (image + attestation children). `crossplane xpkg build
+      # --embed-runtime-image` requires the platform image manifest digest — an index
+      # makes the step fail, leaving the tag pointing at the bare runtime image.
+      - name: Resolve runtime image manifest digest
         if: ${{ !inputs.dry-run }}
+        id: runtime-manifest
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
-          MAJOR_MINOR="${VERSION%.*}"
-          MAJOR="${VERSION%%.*}"
-          docker buildx imagetools create \
-            -t "$IMAGE:$MAJOR_MINOR" -t "$IMAGE:$MAJOR" -t "$IMAGE:latest" \
-            "$IMAGE@$DIGEST"
+          RAW=$(docker buildx imagetools inspect --raw "$IMAGE@$DIGEST")
+          TYPE=$(echo "$RAW" | jq -r '.mediaType // ""')
+          if [[ "$TYPE" == *"index"* ]]; then
+            CHILD=$(echo "$RAW" | jq -r '[.manifests[] | select(.annotations["vnd.docker.reference.type"] != "attestation-manifest")] | .[0].digest // empty')
+          else
+            CHILD="$DIGEST"
+          fi
+          if [ -z "$CHILD" ]; then
+            echo "::error::Could not resolve runtime image manifest digest from $IMAGE@$DIGEST"
+            exit 1
+          fi
+          echo "resolved runtime manifest: $CHILD"
+          echo "digest=$CHILD" >> "$GITHUB_OUTPUT"
 
       - name: Sign runtime image (keyless)
         if: ${{ !inputs.dry-run }}
@@ -155,7 +169,7 @@ jobs:
 
       - name: Pull runtime image for embed
         if: ${{ !inputs.dry-run }}
-        run: docker pull "$IMAGE@${{ steps.build.outputs.digest }}"
+        run: docker pull "$IMAGE@${{ steps.runtime-manifest.outputs.digest }}"
 
       - name: Install Crossplane CLI
         uses: 7K-Group/workflows-library/.github/actions/setup-platform-tools@v1
@@ -167,7 +181,7 @@ jobs:
 
       - name: Build Function xpkg (embeds runtime)
         env:
-          DIGEST: ${{ steps.build.outputs.digest }}
+          DIGEST: ${{ steps.runtime-manifest.outputs.digest }}
           DRY_RUN: ${{ inputs.dry-run }}
         run: |
           # In dry-run the image was loaded into the local Docker cache by tag,
@@ -190,6 +204,17 @@ jobs:
         if: ${{ !inputs.dry-run }}
         id: function-digest
         run: echo "digest=$(docker buildx imagetools inspect "$FUNCTION_IMAGE:$VERSION" --format '{{.Manifest.Digest}}')" >> "$GITHUB_OUTPUT"
+
+      # The xpkg (not the bare runtime image) is what Crossplane pulls, so the
+      # major/minor/latest aliases must point at the xpkg digest.
+      - name: Tag Function xpkg aliases
+        if: ${{ !inputs.dry-run }}
+        run: |
+          MAJOR_MINOR="${VERSION%.*}"
+          MAJOR="${VERSION%%.*}"
+          docker buildx imagetools create \
+            -t "$FUNCTION_IMAGE:$MAJOR_MINOR" -t "$FUNCTION_IMAGE:$MAJOR" -t "$FUNCTION_IMAGE:latest" \
+            "$FUNCTION_IMAGE@${{ steps.function-digest.outputs.digest }}"
 
       - name: Sign Function xpkg (keyless)
         if: ${{ !inputs.dry-run }}
