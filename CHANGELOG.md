@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.9](https://github.com/7K-Group/workflows-library/compare/v1.2.8...v1.2.9) (2026-07-14)
+
+
+### Bug Fixes
+
+* **release-function:** skip xpkg examples layer unless examples-root is set ([#32](https://github.com/7K-Group/workflows-library/issues/32)) ([8aaaf3b](https://github.com/7K-Group/workflows-library/commit/8aaaf3bd2bcec9430fa2a686841bdc2ea807f8b8))
+
 ## [1.2.8](https://github.com/7K-Group/workflows-library/compare/v1.2.7...v1.2.8) (2026-07-14)
 
 
