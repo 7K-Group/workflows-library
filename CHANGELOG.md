@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.7](https://github.com/7K-Group/workflows-library/compare/v1.2.6...v1.2.7) (2026-07-14)
+
+
+### Bug Fixes
+
+* **ci-cdk8s:** install Crossplane CLI before validate step ([#19](https://github.com/7K-Group/workflows-library/issues/19)) ([3a55155](https://github.com/7K-Group/workflows-library/commit/3a55155cc830a3520f42a3b11b48ebdb9148a2d4))
+* **release-function:** embed runtime image manifest, not OCI index ([#28](https://github.com/7K-Group/workflows-library/issues/28)) ([403713d](https://github.com/7K-Group/workflows-library/commit/403713d6a799e68ac91e3302935f37f2f4f95b74))
+
 ## [1.2.6](https://github.com/7K-Group/workflows-library/compare/v1.2.5...v1.2.6) (2026-07-12)
 
 
