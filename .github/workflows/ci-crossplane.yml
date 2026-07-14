@@ -89,6 +89,7 @@ jobs:
 
       - name: Schema-validate manifests
         run: |
+          mapfile -t files < <(find "${{ inputs.path }}" -name '*.yaml' -not -name 'crossplane.yaml')
           kubeconform \
             -strict \
             -ignore-missing-schemas \
@@ -96,9 +97,9 @@ jobs:
             -schema-location default \
             -schema-location 'https://raw.githubusercontent.com/datree/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
             -summary \
-            $(find ${{ inputs.path }} -name '*.yaml' -not -name 'crossplane.yaml')
+            "${files[@]}"
 
       - name: Detect deprecated APIs
         run: |
-          mapfile -t files < <(find ${{ inputs.path }} -name '*.yaml' -not -name 'crossplane.yaml')
+          mapfile -t files < <(find "${{ inputs.path }}" -name '*.yaml' -not -name 'crossplane.yaml')
           pluto detect-files "${files[@]}"

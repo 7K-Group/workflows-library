@@ -17,6 +17,11 @@ on:
         required: false
         type: boolean
         default: true
+      crossplane-version:
+        description: "Crossplane CLI version installed when validate is enabled (empty to skip install, e.g. if the runner image already provides it)."
+        required: false
+        type: string
+        default: "v2.3.2"
       lint:
         required: false
         type: boolean
@@ -53,6 +58,15 @@ jobs:
 
       - name: Synth manifests
         run: npm run synth --if-present
+
+      - name: Install Crossplane CLI
+        if: ${{ inputs.validate && inputs.crossplane-version != '' }}
+        uses: 7K-Group/workflows-library/.github/actions/setup-platform-tools@v1
+        with:
+          crossplane-version: ${{ inputs.crossplane-version }}
+          helm-version: ""
+          kubeconform-version: ""
+          pluto-version: ""
 
       - name: Validate compositions (crossplane render)
         if: ${{ inputs.validate }}

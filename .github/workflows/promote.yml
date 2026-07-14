@@ -47,13 +47,14 @@ jobs:
     steps:
       - name: Validate inputs
         env:
+          DIGEST: ${{ inputs.digest }}
           HARBOR_REGISTRY: ${{ secrets.HARBOR_REGISTRY }}
           HARBOR_PROJECT: ${{ secrets.HARBOR_PROJECT }}
           HARBOR_ROBOT_NAME: ${{ secrets.HARBOR_ROBOT_NAME }}
           HARBOR_ROBOT_TOKEN: ${{ secrets.HARBOR_ROBOT_TOKEN }}
         run: |
-          if [[ "${{ inputs.digest }}" != sha256:* ]]; then
-            echo "::error::digest must start with sha256:, got: ${{ inputs.digest }}"
+          if [[ "$DIGEST" != sha256:* ]]; then
+            echo "::error::digest must start with sha256:, got: $DIGEST"
             exit 1
           fi
           if [ "${{ inputs.dry-run }}" != "true" ]; then
