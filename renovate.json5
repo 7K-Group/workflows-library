@@ -6,15 +6,15 @@
   pinDigests: true,
   packageRules: [
     {
-      matchDepTypes: ["action"],
-      groupName: "github actions",
-      pinDigests: true,
-      schedule: ["weekly"],
-    },
-    {
       matchPackageNames: ["*"],
       groupName: "all dependencies",
       groupSlug: "all",
+    },
+    {
+      matchDepTypes: ["action"],
+      groupName: "github actions",
+      pinDigests: true,
+      schedule: ["* 0-3 * * 1"],
     },
   ],
 }
