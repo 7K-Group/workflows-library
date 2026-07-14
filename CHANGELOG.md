@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.8](https://github.com/7K-Group/workflows-library/compare/v1.2.7...v1.2.8) (2026-07-14)
+
+
+### Bug Fixes
+
+* remove duplicate signature attestation from release-function, apply naming convention ([#30](https://github.com/7K-Group/workflows-library/issues/30)) ([6808b23](https://github.com/7K-Group/workflows-library/commit/6808b23be9d6b25749413f7aeefe5d79e92966ba))
+
 ## [1.2.7](https://github.com/7K-Group/workflows-library/compare/v1.2.6...v1.2.7) (2026-07-14)
 
 
