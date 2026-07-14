@@ -1,4 +1,4 @@
-name: "CI: Helm Docs"
+name: "CI: Helm – Docs"
 
 on:
   workflow_call:

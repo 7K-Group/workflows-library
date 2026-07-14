@@ -1,4 +1,4 @@
-name: "Library CI"
+name: "Library: CI"
 
 on:
   pull_request:

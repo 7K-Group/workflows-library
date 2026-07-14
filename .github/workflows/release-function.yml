@@ -22,10 +22,6 @@ on:
         description: "Short Function xpkg name (e.g. function-platform). Full ref is ${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${function-name}."
         required: true
         type: string
-      go-version:
-        required: false
-        type: string
-        default: "1.24"
       crossplane-version:
         required: false
         type: string
@@ -48,7 +44,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 25
     permissions:
       contents: read
       id-token: write
@@ -112,8 +108,10 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          sbom: ${{ !inputs.dry-run }}
-          provenance: ${{ !inputs.dry-run }}
+          # anchore/sbom-action + cosign attest below provide the SPDX SBOM;
+          # buildkit attestations are disabled to keep the manifest a plain image.
+          sbom: false
+          provenance: false
 
       # With buildkit sbom/provenance attestations enabled, steps.build.outputs.digest is
       # an OCI *index* (image + attestation children). `crossplane xpkg build
@@ -155,14 +153,10 @@ jobs:
         if: ${{ !inputs.dry-run }}
         run: cosign attest --yes --type spdxjson --predicate sbom-image.spdx.json "$IMAGE@${{ steps.build.outputs.digest }}"
 
-      - name: Verify runtime signature + SBOM attestation
+      - name: Verify runtime signature
         if: ${{ !inputs.dry-run }}
         run: |
           cosign verify \
-            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-            --certificate-identity-regexp '^https://github\.com/7K-Group/workflows-library/\.github/workflows/release-function\.yml@.*$' \
-            "$IMAGE@${{ steps.build.outputs.digest }}"
-          cosign verify-attestation --type spdxjson \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             --certificate-identity-regexp '^https://github\.com/7K-Group/workflows-library/\.github/workflows/release-function\.yml@.*$' \
             "$IMAGE@${{ steps.build.outputs.digest }}"

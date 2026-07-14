@@ -1,4 +1,4 @@
-name: "CI: Crossplane Package e2e (kind)"
+name: "CI: Crossplane – e2e (kind)"
 
 # Integration gate: build the xpkg, install it into an ephemeral kind cluster via a
 # local OCI registry, and assert its XRDs reach Established. Catches bad XRD schema

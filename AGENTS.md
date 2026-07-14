@@ -16,6 +16,53 @@ CI: `ci-app`, `ci-cdk8s`, `ci-go-function`, `ci-crossplane`, `ci-crossplane-e2e`
 Release: `release-app`, `release-crossplane`, `release-function`, `release-helm`,
 `release-docs`, `release-please`. Promotion (re-tag by digest): `promote`.
 
+## Naming convention
+
+Reusable workflow files follow a hierarchical grammar — left to right: *when* it
+runs → *what ecosystem* → *what artifact* → *what toolchain* → *which variant*:
+
+```
+<phase>-<domain>[-<artifact>][-<lang>][-<variant>].yml
+name: "<Phase>: <Domain>[ <Artifact>][ (<Lang>)][ – <Variant>]"
+```
+
+- **phase** (closed set): `ci` | `release` | `promote` | `bootstrap` | `library`
+  (repo-internal pipelines).
+- **domain**: technology/ecosystem, never the tool — `app`, `cdk8s`, `crossplane`,
+  `helm`, `docs`, `manifests`, `pr`, `artifacthub`, `image`. Tools (kubeconform,
+  helm-docs, cosign) are implementation detail and live in the workflow body.
+- **artifact** (optional): a *secondary* artifact of the platform. A bare platform
+  name means its primary artifact (`crossplane` = Configuration package,
+  `helm` = chart); secondary artifacts are spelled out (`crossplane-function`).
+- **lang** (optional): `go`, `python`, ... — only when the workflow pins a language
+  toolchain. Omit for language-neutral (Docker/OCI) workflows.
+- **variant** (optional, always last): `e2e`, `library`, `docs`, `metadata`, `lint`.
+- Exception: `release-please.yml` — its domain *is* the tool.
+- Job ids inside files follow the same idea (`build`, `test`, `e2e`, `lint`).
+- Display names already use the v2 forms below even where files keep v1 names
+  until the v2 tag — consumers reference file paths, not display names.
+
+### v2 rename mapping (do NOT rename on v1 — breaking change)
+
+| v1 (current) | v2 | Display name (already in use) |
+|---|---|---|
+| `ci-e2e-kind.yml` | `ci-cdk8s-e2e.yml` | `CI: cdk8s – e2e (kind)` |
+| `ci-go-function.yml` | `ci-crossplane-function-go.yml` | `CI: Crossplane Function (Go)` |
+| `ci-kubeconform.yml` | `ci-manifests.yml` | `CI: Manifests` |
+| `ci-lint-pr-title.yml` | `ci-pr-lint.yml` | `CI: PR – Lint` |
+| `promote.yml` | `promote-image.yml` | `Promote: Image` |
+| `release-function.yml` | `release-crossplane-function.yml` | `Release: Crossplane Function` |
+
+v2 migration notes: renames break consumer `uses:` paths AND cosign verification —
+release workflows pin the workflow filename in `certificate-identity-regexp`
+(e.g. `release-function.yml`), so consumers must update their verify policies in
+lockstep with the v2 tag.
+
+Enforcement: a `naming-check` job in `library-ci.yml` (regex-validating filenames
+against the grammar, whitelisting the legacy names until v2) was considered and
+deliberately NOT implemented — the convention is enforced in review. Revisit if
+drift appears.
+
 ## Conventions
 
 - `concurrency` goes ONLY on top-level workflows (callers). Reusable (`workflow_call`)
@@ -43,8 +90,9 @@ Release: `release-app`, `release-crossplane`, `release-function`, `release-helm`
   `HARBOR_PROJECT`, `HARBOR_ROBOT_NAME`, `HARBOR_ROBOT_TOKEN` (consumers use `secrets: inherit`).
 - `release-app` / `release-function` take a **short** image name and build the full ref as
   `${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${name}`. `ci-app` takes a **full** ref (CI tagging only).
-- All published artifacts are signed with **keyless cosign** (`id-token: write`) and get an
-  SPDX SBOM attestation where applicable.
+- All published artifacts are signed with **keyless cosign** (`id-token: write`). Container
+  images and Function xpkgs also get an SPDX SBOM attestation; Configuration packages contain
+  only YAML and are signature-only.
 - Crossplane xpkgs: build with `crossplane xpkg build --package-root=<dir> -o <file>`;
   Function xpkgs embed the runtime via `--embed-runtime-image=<image@digest>` (image must be in
   the local Docker cache — `docker pull` first in CI). Push with `crossplane xpkg push -f <file> <registry>/<repo>/<name>:<semver>` (tag must be semver).

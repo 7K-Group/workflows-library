@@ -94,8 +94,10 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          sbom: ${{ !inputs.dry-run }}
-          provenance: ${{ !inputs.dry-run }}
+          # anchore/sbom-action + cosign attest below provide the SPDX SBOM;
+          # buildkit attestations are disabled to keep the manifest a plain image.
+          sbom: false
+          provenance: false
 
       - name: Sign image with cosign (keyless)
         if: ${{ !inputs.dry-run }}
