@@ -31,6 +31,11 @@ on:
         required: false
         type: boolean
         default: false
+      examples-root:
+        description: "Repo-relative path to example manifests bundled into the xpkg (`crossplane xpkg build -e`). If unset or the directory does not exist, no examples layer is bundled."
+        required: false
+        type: string
+        default: ""
     secrets:
       HARBOR_REGISTRY:
         required: false
@@ -56,7 +61,7 @@ jobs:
       FUNCTION_IMAGE: ${{ secrets.HARBOR_REGISTRY != '' && format('{0}/{1}/{2}', secrets.HARBOR_REGISTRY, secrets.HARBOR_PROJECT, inputs.function-name) || inputs.function-name }}
       VERSION: ${{ inputs.version }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Validate Harbor secrets
         if: ${{ !inputs.dry-run }}
@@ -73,12 +78,12 @@ jobs:
             fi
           done
 
-      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c  # v4
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
 
-      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6  # v4.1.2
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
         if: ${{ !inputs.dry-run }}
 
-      - uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0  # v4
+      - uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4
         if: ${{ !inputs.dry-run }}
         with:
           registry: ${{ secrets.HARBOR_REGISTRY }}
@@ -87,7 +92,7 @@ jobs:
 
       - name: Runtime image metadata
         id: meta
-        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302  # v6
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
         with:
           images: ${{ env.IMAGE }}
           # latest is tagged on the Function xpkg (not the runtime image) post-push,
@@ -99,7 +104,7 @@ jobs:
 
       - name: Build + push runtime image
         id: build
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a  # v7
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: ${{ inputs.path }}
           push: ${{ !inputs.dry-run }}
@@ -143,7 +148,7 @@ jobs:
 
       - name: Generate runtime SBOM
         if: ${{ !inputs.dry-run }}
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610  # v0
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
         with:
           image: ${{ env.IMAGE }}@${{ steps.build.outputs.digest }}
           format: spdx-json
@@ -185,8 +190,17 @@ jobs:
           else
             EMBED_REF="$IMAGE@$DIGEST"
           fi
+          # crossplane xpkg build defaults --examples-root to ./examples relative to
+          # the checkout root, then fails on any non-manifest YAML it finds there
+          # (e.g. cdk8s.yaml). Point it at a guaranteed-nonexistent path when the
+          # caller didn't provide a real examples dir: the CLI skips the layer.
+          EXAMPLES_ROOT="${{ inputs.examples-root }}"
+          if [ -z "$EXAMPLES_ROOT" ] || [ ! -d "$EXAMPLES_ROOT" ]; then
+            EXAMPLES_ROOT="$(mktemp -d)/no-examples"
+          fi
           crossplane xpkg build \
             --package-root=${{ inputs.package-path }} \
+            --examples-root="$EXAMPLES_ROOT" \
             --embed-runtime-image="$EMBED_REF" \
             -o /tmp/function.xpkg
 
