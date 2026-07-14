@@ -1,4 +1,4 @@
-name: "CI: Go Function"
+name: "CI: Crossplane Function (Go)"
 
 on:
   workflow_call:

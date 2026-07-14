@@ -1,4 +1,4 @@
-name: "Promote image (re-tag by digest)"
+name: "Promote: Image"
 
 on:
   workflow_call:

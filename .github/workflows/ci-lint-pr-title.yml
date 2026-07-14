@@ -1,4 +1,4 @@
-name: "CI - Lint PR Title"
+name: "CI: PR – Lint"
 
 on:
   workflow_call:

@@ -1,4 +1,4 @@
-name: "CI: Crossplane Package"
+name: "CI: Crossplane"
 
 on:
   workflow_call:

@@ -43,7 +43,7 @@ All release workflows publish to **Harbor** and sign with keyless cosign. Requir
 | Workflow                 | Publishes                                                              | Key inputs                                                                                    |
 | ------------------------ | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | `release-app.yml`        | multi-tag container image + SBOM + cosign attest                       | `path`, `version`, `image-name` (**short** name)                                              |
-| `release-crossplane.yml` | Configuration xpkg → Harbor OCI, signed + SBOM                         | `path`, `version`, `image` (short), `examples-root`                                           |
+| `release-crossplane.yml` | Configuration xpkg → Harbor OCI, signed                              | `path`, `version`, `image` (short), `examples-root`                                           |
 | `release-function.yml`   | runtime image + Function xpkg (runtime embedded) → Harbor, both signed | `path`, `package-path`, `version`, `image-name` (runtime), `function-name` (xpkg)             |
 | `release-helm.yml`       | OCI chart → Harbor                                                     | `path`, `version`                                                                             |
 | `release-docs.yml`       | TechDocs → S3 + dispatch                                               | `path`, `version`, `target-owner`, `target-repo`                                              |
@@ -106,8 +106,9 @@ jobs:
   caller's group — `${{ github.workflow }}` resolves to the caller) and set
   `timeout-minutes` per job instead.
 - **Signing + verification:** `release-app` / `release-crossplane` / `release-function`
-  sign with keyless cosign, attach an SPDX SBOM, and **self-verify** the signature and
-  attestation against the workflow identity before finishing.
+  sign with keyless cosign and **self-verify** the signature against the workflow identity
+  before finishing. Container images additionally get an SPDX SBOM attestation
+  (Configuration packages contain only YAML and are signature-only).
 - **Promote by digest:** `promote.yml` re-tags an existing `image@sha256` (no rebuild),
   so staging/prod are byte-identical to what CI tested.
 - **Deploy-time enforcement:** `policies/sigstore-clusterimagepolicy.yaml` is a reference

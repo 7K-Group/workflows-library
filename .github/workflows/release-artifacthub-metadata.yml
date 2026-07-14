@@ -1,4 +1,4 @@
-name: "Release: Artifact Hub metadata"
+name: "Release: Artifact Hub – Metadata"
 
 on:
   workflow_call:

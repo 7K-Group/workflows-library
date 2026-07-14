@@ -1,4 +1,4 @@
-name: "CI: Helm Library"
+name: "CI: Helm – Library"
 
 on:
   workflow_call:

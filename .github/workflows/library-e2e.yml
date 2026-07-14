@@ -1,4 +1,4 @@
-name: "Library E2E"
+name: "Library: e2e"
 
 on:
   pull_request:

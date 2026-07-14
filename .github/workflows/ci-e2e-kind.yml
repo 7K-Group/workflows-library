@@ -1,4 +1,4 @@
-name: "CI: cdk8s e2e (kind)"
+name: "CI: cdk8s – e2e (kind)"
 
 on:
   workflow_call:
