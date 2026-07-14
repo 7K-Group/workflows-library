@@ -56,7 +56,7 @@ jobs:
         uses: golangci/golangci-lint-action@v8
         with:
           working-directory: ${{ inputs.path }}
-          version: v2.1
+          version: v2.12.2
 
       - name: Upload coverage
         uses: actions/upload-artifact@v5
