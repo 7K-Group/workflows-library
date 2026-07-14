@@ -53,7 +53,7 @@ jobs:
 
   e2e-ci-app:
     name: ci-app (fixture Dockerfile)
-    uses: ./.github/workflows/ci-docker.yml
+    uses: ./.github/workflows/ci-app.yml
     with:
       path: tests/fixtures/app
       image-name: library-fixture-app
