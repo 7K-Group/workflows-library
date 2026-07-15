@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/7K-Group/workflows-library/compare/v1.2.9...v1.3.0) (2026-07-15)
+
+
+### Features
+
+* remove hiroba op on docs release ([e3f5b25](https://github.com/7K-Group/workflows-library/commit/e3f5b25c0eb70117f432d0e2b6a71b8789469d3f))
+
 ## [1.2.9](https://github.com/7K-Group/workflows-library/compare/v1.2.8...v1.2.9) (2026-07-14)
 
 
