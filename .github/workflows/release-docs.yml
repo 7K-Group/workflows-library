@@ -9,16 +9,11 @@ on:
       version:
         required: true
         type: string
-      target-owner:
+      prefix:
         required: false
         type: string
-        default: "7K-Group"
-        description: "GitHub owner of the repo to dispatch docs-updated to"
-      target-repo:
-        required: false
-        type: string
-        default: "Hiroba"
-        description: "GitHub repo name to dispatch docs-updated to"
+        default: ""
+        description: "Bucket key prefix. Defaults to the calling repository name."
     secrets:
       DOCS_S3_ACCESS_KEY_ID:
         required: true
@@ -27,10 +22,6 @@ on:
       APPDOCS_S3_BUCKET:
         required: true
       DOCS_S3_ENDPOINT_URL:
-        required: true
-      HIROBA_DISPATCH_APP_ID:
-        required: true
-      HIROBA_DISPATCH_APP_PRIVATE_KEY:
         required: true
 
 jobs:
@@ -51,28 +42,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.DOCS_S3_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: garage
         run: |
-          PREFIX="${{ github.event.repository.name }}"
+          PREFIX="${{ inputs.prefix || github.event.repository.name }}"
           s5cmd --endpoint-url=${{ secrets.DOCS_S3_ENDPOINT_URL }} sync --size-only --delete ${{ inputs.path }}/ "s3://${{ secrets.APPDOCS_S3_BUCKET }}/${PREFIX}/"
           echo "Published docs v${{ inputs.version }} to ${{ secrets.APPDOCS_S3_BUCKET }}/${PREFIX}/"
-
-      - name: Generate dispatch app token
-        id: dispatch-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3
-        with:
-          client-id: ${{ secrets.HIROBA_DISPATCH_APP_ID }}
-          private-key: ${{ secrets.HIROBA_DISPATCH_APP_PRIVATE_KEY }}
-          owner: ${{ inputs.target-owner }}
-          repositories: ${{ inputs.target-repo }}
-
-      - name: Trigger docs deploy
-        env:
-          GH_TOKEN: ${{ steps.dispatch-token.outputs.token }}
-          OWNER: ${{ inputs.target-owner }}
-          REPO: ${{ inputs.target-repo }}
-          APP: ${{ github.event.repository.name }}
-          VERSION: ${{ inputs.version }}
-        run: |
-          gh api -X POST "/repos/${OWNER}/${REPO}/dispatches" \
-            -f event_type=docs-updated \
-            -f "client_payload[app]=$APP" \
-            -f "client_payload[version]=$VERSION"

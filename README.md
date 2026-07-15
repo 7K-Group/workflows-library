@@ -46,7 +46,7 @@ All release workflows publish to **Harbor** and sign with keyless cosign. Requir
 | `release-crossplane.yml` | Configuration xpkg → Harbor OCI, signed                              | `path`, `version`, `image` (short), `examples-root`                                           |
 | `release-function.yml`   | runtime image + Function xpkg (runtime embedded) → Harbor, both signed | `path`, `package-path`, `version`, `image-name` (runtime), `function-name` (xpkg)             |
 | `release-helm.yml`       | OCI chart → Harbor                                                     | `path`, `version`                                                                             |
-| `release-docs.yml`       | TechDocs → S3 + dispatch                                               | `path`, `version`, `target-owner`, `target-repo`                                              |
+| `release-docs.yml`       | Docs site → S3 (Garage)                                                | `path`, `version`, `prefix` (optional, defaults to repo name)                                 |
 | `release-please.yml`     | wrapper around release-please (manifest-aware)                         | `config-file`, `manifest-file`, `target-branch`; secret `RELEASE_PLEASE_TOKEN` (optional PAT) |
 | `promote.yml`            | re-tag an existing image digest to `staging`/`prod` (no rebuild)       | `image` (short), `digest`, `tags` (csv), `sign`; Harbor secrets                               |
 
