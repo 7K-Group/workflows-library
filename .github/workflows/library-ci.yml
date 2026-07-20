@@ -21,7 +21,7 @@ jobs:
     name: Lint workflow files
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Validate YAML syntax
         run: |
@@ -35,7 +35,7 @@ jobs:
     name: Enforce single version source
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Check .tool-versions against action defaults and workflow input defaults
         run: |
@@ -94,7 +94,7 @@ jobs:
     name: Enforce SHA pins on release workflows
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Check release workflows pin third-party actions to full SHAs
         run: |
