@@ -19,7 +19,7 @@ to the latest `v1.x.x` on every release.
 ## CI workflows
 
 | Workflow                | Purpose                                                                                      | Key inputs                                                                            |
-| ----------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| ----------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | --- |
 | `ci-app.yml`            | Docker build + Trivy scan (uploads SARIF)                                                    | `path`, `image-name` (full ref)                                                       |
 | `ci-cdk8s.yml`          | `npm ci → lint → build → test:unit → synth → validate` for cdk8s workspace roots             | `path` (default `.`), `node-version`, `validate`, `lint`                              |
 | `ci-go-function.yml`    | `go build/vet/test` (+ optional govulncheck, golangci-lint) for a Crossplane function module | `path`, `go-version` (default `1.24`), `run-golangci`, `run-govulncheck`              |
@@ -30,7 +30,7 @@ to the latest `v1.x.x` on every release.
 | `ci-helm-docs.yml`      | regenerate + auto-commit chart README from `README.md.gotmpl`                                | —                                                                                     |
 | `ci-docs.yml`           | markdown lint                                                                                | `path`                                                                                |
 | `ci-kubeconform.yml`    | kubeconform + pluto on raw manifests                                                         | `path`                                                                                |
-| `ci-lint-pr-title.yml`  | Conventional-Commit PR title lint                                                            | —                                                                                     | —                                                                                     |
+| `ci-lint-pr-title.yml`  | Conventional-Commit PR title lint                                                            | —                                                                                     | —   |
 | `ci-crossplane-e2e.yml` | build xpkg → install into ephemeral kind via local registry → assert XRDs `Established`      | `path`, `image`, `prebuild`, `crossplane-version`, `kube-version`                     |
 
 Helm charts require `values.schema.json`; add `.ci-api-versions` for custom CRDs.
@@ -40,15 +40,15 @@ Helm charts require `values.schema.json`; add `.ci-api-versions` for custom CRDs
 All release workflows publish to **Harbor** and sign with keyless cosign. Required secrets
 (use `secrets: inherit`): `HARBOR_REGISTRY`, `HARBOR_PROJECT`, `HARBOR_ROBOT_NAME`, `HARBOR_ROBOT_TOKEN`.
 
-| Workflow                 | Publishes                                                              | Key inputs                                                                                    |
-| ------------------------ | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `release-app.yml`        | multi-tag container image + SBOM + cosign attest                       | `path`, `version`, `image-name` (**short** name)                                              |
-| `release-crossplane.yml` | Configuration xpkg → Harbor OCI, signed                              | `path`, `version`, `image` (short), `examples-root`                                           |
-| `release-function.yml`   | runtime image + Function xpkg (runtime embedded) → Harbor, both signed | `path`, `package-path`, `version`, `image-name` (runtime), `function-name` (xpkg)             |
-| `release-helm.yml`       | OCI chart → Harbor                                                     | `path`, `version`                                                                             |
+| Workflow                 | Publishes                                                              | Key inputs                                                                                                                                             |
+| ------------------------ | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `release-app.yml`        | multi-tag container image + SBOM + cosign attest                       | `path`, `version`, `image-name` (**short** name)                                                                                                       |
+| `release-crossplane.yml` | Configuration xpkg → Harbor OCI, signed                                | `path`, `version`, `image` (short), `examples-root`                                                                                                    |
+| `release-function.yml`   | runtime image + Function xpkg (runtime embedded) → Harbor, both signed | `path`, `package-path`, `version`, `image-name` (runtime), `function-name` (xpkg)                                                                      |
+| `release-helm.yml`       | OCI chart → Harbor                                                     | `path`, `version`                                                                                                                                      |
 | `release-docs.yml`       | Docs site → S3 (Garage)                                                | `path`, `version`, `prefix` (optional, defaults to repo name), `artifact` (optional, downloads named artifact to `path` instead of using the checkout) |
-| `release-please.yml`     | wrapper around release-please (manifest-aware)                         | `config-file`, `manifest-file`, `target-branch`; secret `RELEASE_PLEASE_TOKEN` (optional PAT) |
-| `promote.yml`            | re-tag an existing image digest to `staging`/`prod` (no rebuild)       | `image` (short), `digest`, `tags` (csv), `sign`; Harbor secrets                               |
+| `release-please.yml`     | wrapper around release-please (manifest-aware)                         | `config-file`, `manifest-file`, `target-branch`; secret `RELEASE_PLEASE_TOKEN` (optional PAT)                                                          |
+| `promote.yml`            | re-tag an existing image digest to `staging`/`prod` (no rebuild)       | `image` (short), `digest`, `tags` (csv), `sign`; Harbor secrets                                                                                        |
 
 `release-app.yml` and `release-function.yml` build the full Harbor ref as
 `${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${image-name}` — pass the **short** name, not a full ref.
@@ -86,7 +86,7 @@ jobs:
     secrets: inherit
   function:
     needs: release-please
-    if: ${{ fromJson(needs.release-please.outputs.releases_created || '{}')['functions/platform'] }}
+    if: ${{ contains(fromJson(needs.release-please.outputs.paths_released || '[]'), 'functions/platform') }}
     uses: 7K-Group/workflows-library/.github/workflows/release-function.yml@v1
     with:
       path: functions/platform
@@ -96,6 +96,18 @@ jobs:
       function-name: function-platform
     secrets: inherit
 ```
+
+Gating downstream jobs on releases: `releases_created` is a boolean string
+(`'true'`/`'false'`) — use it directly for single-package repos:
+
+```yaml
+if: ${{ needs.release-please.outputs.releases_created == 'true' }}
+```
+
+For monorepos that need per-path gating, use `paths_released` (a JSON array)
+as shown in the example above. Do **not** index `releases_created` with
+`fromJson(...)['<path>']` — it is not a map, and the condition will silently
+evaluate to false on every release.
 
 ## Security & supply chain
 
@@ -124,7 +136,7 @@ Tool installers are centralized in the composite action
 `.github/actions/setup-platform-tools` (crossplane / helm / kubeconform / pluto). Workflows
 reference it via the fully-qualified form
 `7K-Group/workflows-library/.github/actions/setup-platform-tools@v1` — never the relative
-`./...` form, which resolves against the *calling* repo's checkout and would force consumers
+`./...` form, which resolves against the _calling_ repo's checkout and would force consumers
 to vendor a copy. Canonical versions live in `.tool-versions`; keep the action's defaults in
 sync when bumping.
 
