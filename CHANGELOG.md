@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/7K-Group/workflows-library/compare/v1.3.1...v1.3.2) (2026-07-21)
+
+
+### Bug Fixes
+
+* correct releases_created output documentation ([#40](https://github.com/7K-Group/workflows-library/issues/40)) ([54f2620](https://github.com/7K-Group/workflows-library/commit/54f2620cb0ffbcc41d5f80c99d69755c89882995)), closes [#39](https://github.com/7K-Group/workflows-library/issues/39)
+
 ## [1.3.1](https://github.com/7K-Group/workflows-library/compare/v1.3.0...v1.3.1) (2026-07-15)
 
 
