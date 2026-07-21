@@ -12,10 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Lint Markdown
-        uses: DavidAnson/markdownlint-cli2-action@v23
+        uses: DavidAnson/markdownlint-cli2-action@6bf21b07787794f89a243495939cd651942aeabe # v24
         with:
           globs: |
             ${{ inputs.path }}/**/*.md
