@@ -17,7 +17,7 @@ on:
         default: ""
     outputs:
       releases_created:
-        description: "JSON map of package path -> boolean release flag."
+        description: "Boolean string ('true'/'false') indicating whether any release was created."
         value: ${{ jobs.release.outputs.releases_created }}
       paths_released:
         description: "JSON array of package paths that were released."
@@ -38,7 +38,7 @@ jobs:
       releases_created: ${{ steps.rp.outputs.releases_created }}
       paths_released: ${{ steps.rp.outputs.paths_released }}
     steps:
-      - uses: googleapis/release-please-action@0dfd8538845b8e92600d271a895a5372865d4062  # v5
+      - uses: googleapis/release-please-action@0dfd8538845b8e92600d271a895a5372865d4062 # v5
         id: rp
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
