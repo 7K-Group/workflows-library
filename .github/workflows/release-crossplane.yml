@@ -92,7 +92,7 @@ jobs:
         run: ${{ inputs.prebuild }}
 
       - name: Install Crossplane CLI
-        uses: 7K-Group/workflows-library/.github/actions/setup-platform-tools@v1
+        uses: 7K-Group/workflows-library/.github/actions/setup-platform-tools@8f3f1dd841f9f34fc74a5fdb76577119b251ec0c # v1
         with:
           crossplane-version: ${{ inputs.crossplane-version }}
           helm-version: ""
@@ -102,7 +102,7 @@ jobs:
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6  # v4.1.2
         if: ${{ !inputs.dry-run }}
 
-      - uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0  # v4
+      - uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7  # v4
         if: ${{ !inputs.dry-run }}
         with:
           registry: ${{ secrets.HARBOR_REGISTRY }}
